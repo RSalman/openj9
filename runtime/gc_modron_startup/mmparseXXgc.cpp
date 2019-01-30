@@ -722,6 +722,35 @@ gcParseXXgcArguments(J9JavaVM *vm, char *optArg)
 		}
 
 #if defined(J9VM_GC_MODRON_SCAVENGER)
+
+		if (try_scan(&scan_start, "waitCount=")) {
+					/* Read in restricted scan cache size */
+					if(!scan_udata_helper(vm, &scan_start, &extensions->waitCount, "waitCount=")) {
+						returnValue = JNI_EINVAL;
+						break;
+					}
+					if(0 == extensions->waitCount) {
+						j9nls_printf(PORTLIB,J9NLS_ERROR, J9NLS_GC_OPTIONS_VALUE_MUST_BE_ABOVE, "-XXgc:waitCount", (UDATA)0);
+						returnValue = JNI_EINVAL;
+						break;
+					}
+					continue;
+				}
+
+		if (try_scan(&scan_start, "threshold=")) {
+				/* Read in restricted scan cache size */
+				if(!scan_udata_helper(vm, &scan_start, &extensions->threshold, "threshold=")) {
+					returnValue = JNI_EINVAL;
+					break;
+				}
+				if(0 == extensions->threshold) {
+					j9nls_printf(PORTLIB,J9NLS_ERROR, J9NLS_GC_OPTIONS_VALUE_MUST_BE_ABOVE, "-XXgc:threshold", (UDATA)0);
+					returnValue = JNI_EINVAL;
+					break;
+				}
+				continue;
+			}
+
 		if (try_scan(&scan_start, "scanCacheMinimumSize=")) {
 			/* Read in restricted scan cache size */
 			if(!scan_udata_helper(vm, &scan_start, &extensions->scavengerScanCacheMinimumSize, "scanCacheMinimumSize=")) {
