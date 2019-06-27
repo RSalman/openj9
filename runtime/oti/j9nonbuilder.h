@@ -4985,6 +4985,7 @@ typedef struct J9VMThread {
 #endif /* OMR_GC_COMPRESSED_POINTERS */
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	UDATA safePointCount;
+	U_32 sampleRate;
 } J9VMThread;
 
 #define J9VMTHREAD_ALIGNMENT  0x100

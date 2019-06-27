@@ -1135,6 +1135,12 @@ jniIsGlobalRef(JNIEnv* env, jobject reference)
 	enterVM(vmThread);
 
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++((vmThread)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_ENV(env);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
+
+
 	omrthread_monitor_enter(vm->jniFrameMutex);
 #endif
 	/* walk the JNIGlobalReferences pool */
@@ -1262,6 +1268,10 @@ static UDATA jniIsWeakGlobalRef(JNIEnv* env, jobject reference) {
 	enterVM(vmThread);
 
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++((vmThread)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_ENV(env);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
 	omrthread_monitor_enter(vm->jniFrameMutex);
 #endif
 	/* walk the JNIWeakGlobalReferences pool */

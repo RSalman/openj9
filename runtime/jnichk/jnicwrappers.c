@@ -569,6 +569,12 @@ checkNewGlobalRef(JNIEnv *env, jobject lobj)
 		searchEntry.alive = TRUE;
 			
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++(((J9VMThread*)env)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_ENV(env);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
+	
+
 	omrthread_monitor_enter(j9vm->jniFrameMutex);
 #endif
 		foundEntry = hashTableFind(j9vm->checkJNIData.jniGlobalRefHashTab, &searchEntry);
@@ -606,6 +612,10 @@ checkDeleteGlobalRef(JNIEnv *env, jobject gref)
 	/* search for the reference in the hashtable */
 	entry.reference = (UDATA)gref;
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++(((J9VMThread*)env)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_ENV(env);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
 	omrthread_monitor_enter(j9vm->jniFrameMutex);
 #endif
 	actualResult = hashTableFind(j9vm->checkJNIData.jniGlobalRefHashTab, &entry);
