@@ -133,9 +133,13 @@ GC_VMInterface::unlockClasses(MM_GCExtensions *extensions)
  * Acquire exclusive access to JNI global references.
  */
 void
-GC_VMInterface::lockJNIGlobalReferences(MM_GCExtensions *extensions)
+GC_VMInterface::lockJNIGlobalReferences(MM_GCExtensions *extensions, J9VMThread * thread)
 {
 #if defined(J9VM_THR_PREEMPTIVE)
+	if ( ++((thread)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_JAVAVM((J9JavaVM *)extensions->getOmrVM()->_language_vm);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
 	omrthread_monitor_enter(((J9JavaVM *)extensions->getOmrVM()->_language_vm)->jniFrameMutex);
 #endif /* J9VM_THR_PREEMPTIVE */
 }

@@ -225,6 +225,8 @@ allocateVMThread(J9JavaVM * vm, omrthread_t osThread, UDATA privateFlags, void *
 #endif /* OMR_GC_COMPRESSED_POINTERS */
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 
+	newThread->sampleRate = 0;
+
 	/* Attach the thread to OMR */
 	if (JNI_OK != attachVMThreadToOMR(vm, newThread, osThread)) {
 		goto fail;

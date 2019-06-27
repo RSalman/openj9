@@ -60,7 +60,7 @@ public:
 	static void unlockClassMemorySegmentList(MM_GCExtensions *extensions);
 	static void lockClasses(MM_GCExtensions *extensions);
 	static void unlockClasses(MM_GCExtensions *extensions);
-	static void lockJNIGlobalReferences(MM_GCExtensions *extensions);
+	static void lockJNIGlobalReferences(MM_GCExtensions *extensions, J9VMThread * thread);
 	static void unlockJNIGlobalReferences(MM_GCExtensions *extensions);
 	static void lockVMThreadList(MM_GCExtensions *extensions);
 	static void unlockVMThreadList(MM_GCExtensions *extensions);

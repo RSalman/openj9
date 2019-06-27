@@ -1492,6 +1492,10 @@ j9jni_deleteGlobalRef(JNIEnv *env, jobject globalRef, jboolean isWeak)
 	if (globalRef != NULL) {
 
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++(((J9VMThread*)env)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_ENV(env);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
 		omrthread_monitor_enter(vm->jniFrameMutex);
 #endif
 
@@ -1529,6 +1533,10 @@ j9jni_createGlobalRef(JNIEnv *env, j9object_t object, jboolean isWeak)
 	Assert_VM_notNull(object);
 
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++(((J9VMThread*)env)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_ENV(env);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
 	omrthread_monitor_enter(vm->jniFrameMutex);
 #endif
 
@@ -1995,6 +2003,12 @@ getJNIFieldID(J9VMThread *currentThread, J9Class* declaringClass, J9ROMFieldShap
 		}
 
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++((currentThread)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_VMC(currentThread);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
+	
+	
 		omrthread_monitor_enter(vm->jniFrameMutex);
 #endif
 
@@ -2044,6 +2058,10 @@ getJNIMethodID(J9VMThread *currentThread, J9Method *method)
 	}
 
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++((currentThread)->sampleRate) % 10 == 0){
+		PORT_ACCESS_FROM_VMC(currentThread);
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
 	omrthread_monitor_enter(vm->jniFrameMutex);
 #endif
 
@@ -2154,12 +2172,16 @@ getObjectRefType(JNIEnv *env, jobject obj)
 	VM_VMAccess::inlineEnterVMFromJNI(vmThread);
 
 	/* Quick check for NULL or tagged pointers */
+	PORT_ACCESS_FROM_VMC(vmThread);
 
 	if ((obj == NULL) || ((((UDATA)obj) & ((UDATA)sizeof(UDATA) - 1)) != 0)) {
 		goto done;
 	}
 
 #ifdef J9VM_THR_PREEMPTIVE
+	if ( ++((vmThread)->sampleRate) % 10 == 0){
+		j9tty_printf( PORTLIB, "%s %s [jniFrameMutex]\n", __FILE__, __LINE__);
+	}
 	omrthread_monitor_enter(vm->jniFrameMutex);
 #endif
 

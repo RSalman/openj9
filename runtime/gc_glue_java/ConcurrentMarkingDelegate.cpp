@@ -199,7 +199,7 @@ MM_ConcurrentMarkingDelegate::collectJNIRoots(MM_EnvironmentBase *env, bool *com
 
 	Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
-	GC_VMInterface::lockJNIGlobalReferences(extensions);
+	GC_VMInterface::lockJNIGlobalReferences(extensions, (J9VMThread *)env->getLanguageVMThread());
 	GC_PoolIterator jniGlobalReferenceIterator(_javaVM->jniGlobalReferences);
 	omrobjectptr_t *slotPtr;
 	uintptr_t slotNum = 0;
