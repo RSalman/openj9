@@ -163,6 +163,7 @@ calculateInstanceDescription( J9VMThread *vmThread, J9Class *ramClass, J9Class *
 	 * set the corresponding description bit for each 
 	 */
 	{
+		UDATA classFlags = ramClass->classDepthAndFlags & (J9AccClassReferenceMask | J9AccClassGCSpecial | J9AccClassOwnableSynchronizer);
 		while (walkResult->field) {
 			UDATA slotOffset = walkResult->offset / (objectSlotSize * slotsPerShapeElement);
 			J9UTF8 *fieldSig = J9ROMFIELDSHAPE_SIGNATURE(walkResult->field);
@@ -176,6 +177,12 @@ calculateInstanceDescription( J9VMThread *vmThread, J9Class *ramClass, J9Class *
 				} else {
 					ramClass->selfReferencingField2 = walkResult->offset + J9_OBJECT_HEADER_SIZE;
 				}
+			}
+
+			if(0 != classFlags) {
+				ramClass->classDepthAndFlags &= ~J9AccClassSelfReferencing;
+			} else if(ramClass->selfReferencingField1 != 0) {
+				ramClass->classDepthAndFlags |= J9AccClassSelfReferencing;
 			}
 
 #ifdef J9VM_OPT_VALHALLA_VALUE_TYPES

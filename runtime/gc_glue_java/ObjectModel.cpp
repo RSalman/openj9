@@ -109,6 +109,8 @@ GC_ObjectModel::internalClassLoadHook(J9HookInterface** hook, UDATA eventNum, vo
 		const char * const javaLangClass = "java/lang/Class";
 		const char * const abstractOwnableSynchronizer = "java/util/concurrent/locks/AbstractOwnableSynchronizer";
 
+		clazz->classDepthAndFlags &= ~J9AccClassSelfReferencing;
+
 		if (0 == compareUTF8Length(J9UTF8_DATA(className), J9UTF8_LENGTH(className), (U_8*)atomicMarkableReference, strlen(atomicMarkableReference))) {
 			clazz->classDepthAndFlags |= J9AccClassGCSpecial;
 			objectModel->_atomicMarkableReferenceClass = clazz;
@@ -120,6 +122,8 @@ GC_ObjectModel::internalClassLoadHook(J9HookInterface** hook, UDATA eventNum, vo
 			objectModel->_classClass = clazz;
 		} else if (0 == compareUTF8Length(J9UTF8_DATA(className), J9UTF8_LENGTH(className), (U_8*)abstractOwnableSynchronizer, strlen(abstractOwnableSynchronizer))) {
 			 clazz->classDepthAndFlags |= J9AccClassOwnableSynchronizer;
+		}  else {
+		 		clazz->classDepthAndFlags |= J9AccClassSelfReferencing;
 		}
 	}
 }

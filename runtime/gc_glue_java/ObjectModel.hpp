@@ -178,16 +178,13 @@ public:
 		switch(J9GC_CLASS_SHAPE(clazz)) {
 		case OBJECT_HEADER_SHAPE_MIXED:
 		{
-			UDATA classFlags = J9CLASS_FLAGS(clazz) & (J9AccClassReferenceMask | J9AccClassGCSpecial | J9AccClassOwnableSynchronizer);
+			UDATA classFlags = J9CLASS_FLAGS(clazz) & (J9AccClassReferenceMask | J9AccClassGCSpecial | J9AccClassOwnableSynchronizer | J9AccClassSelfReferencing);
 			if (0 == classFlags) {
-				/* TODO try an approach with a separate class flag */
-				if (0 != clazz->selfReferencingField1) {
-					result = SCAN_MIXED_OBJECT_LINKED;
-				} else {
 					result = SCAN_MIXED_OBJECT;
-				}
 			} else {
-				if (0 != (classFlags & J9AccClassReferenceMask)) {
+				if (0 != (classFlags & J9AccClassSelfReferencing)){
+					result = SCAN_MIXED_OBJECT_LINKED;
+				} else if (0 != (classFlags & J9AccClassReferenceMask)) {
 					result = SCAN_REFERENCE_MIXED_OBJECT;
 				} else if (0 != (classFlags & J9AccClassGCSpecial)) {
 					result = getSpecialClassScanType(clazz);
