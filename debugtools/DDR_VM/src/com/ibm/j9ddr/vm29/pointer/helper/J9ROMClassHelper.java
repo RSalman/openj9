@@ -90,7 +90,8 @@ public class J9ROMClassHelper {
 	}
 
 	public static boolean hasJDBCNatives(J9ROMClassPointer romclass) throws CorruptDataException {
-		return romclass.extraModifiers().allBitsIn(J9AccClassHasJDBCNatives);
+		//return romclass.extraModifiers().allBitsIn(J9AccClassHasJDBCNatives);
+		return true;
 	}
 
 	public static boolean isGCSpecial(J9ROMClassPointer romclass) throws CorruptDataException {
