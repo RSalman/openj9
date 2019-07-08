@@ -169,12 +169,14 @@ calculateInstanceDescription( J9VMThread *vmThread, J9Class *ramClass, J9Class *
 			U_8 *fieldSigBytes = J9UTF8_DATA(fieldSig);
 			U_16 fieldSigLength = J9UTF8_LENGTH(fieldSig);
 
-			/* If the field is self referencing then store the offset to it (at most 2). Self referencing fields are to be scanned with priority during GC */
-			if (((ramClass->selfReferencingField1 == 0) || (ramClass->selfReferencingField2 == 0)) && J9UTF8_DATA_EQUALS(J9UTF8_DATA(className), J9UTF8_LENGTH(className), fieldSigBytes + 1, fieldSigLength - 2)) {
-				if (ramClass->selfReferencingField1 == 0) {
-					ramClass->selfReferencingField1 = walkResult->offset + J9_OBJECT_HEADER_SIZE;
-				} else {
-					ramClass->selfReferencingField2 = walkResult->offset + J9_OBJECT_HEADER_SIZE;
+			if (FALSE != ((vmThread)->javaVM)->deepScanEnabled) {
+				/* If the field is self referencing then store the offset to it (at most 2). Self referencing fields are to be scanned with priority during GC */
+				if (((ramClass->selfReferencingField1 == 0) || (ramClass->selfReferencingField2 == 0)) && J9UTF8_DATA_EQUALS(J9UTF8_DATA(className), J9UTF8_LENGTH(className), fieldSigBytes + 1, fieldSigLength - 2)) {
+					if (ramClass->selfReferencingField1 == 0) {
+						ramClass->selfReferencingField1 = walkResult->offset + J9_OBJECT_HEADER_SIZE;
+					} else {
+						ramClass->selfReferencingField2 = walkResult->offset + J9_OBJECT_HEADER_SIZE;
+					}
 				}
 			}
 

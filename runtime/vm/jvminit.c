@@ -1970,6 +1970,16 @@ IDATA VMInitStages(J9JavaVM *vm, IDATA stage, void* reserved) {
 					Trc_VM_CgroupSubsystemsNotEnabled(vm->mainThread, subsystemsAvailable, subsystemsEnabled);
 				}
 			}
+
+			argIndex = FIND_AND_CONSUME_ARG(EXACT_MATCH, VMOPT_XXDEEP_SCAN, NULL);
+			argIndex2 = FIND_AND_CONSUME_ARG(EXACT_MATCH, VMOPT_XXNODEEP_SCAN, NULL);
+
+			/* Enable -XX:+DeepScan by default */
+			vm->deepScanEnabled = TRUE;
+			if (argIndex2 > argIndex) {
+				vm->deepScanEnabled = FALSE;
+			}
+
 			parseError = setMemoryOptionToOptElse(vm, &(vm->directByteBufferMemoryMax),
 					VMOPT_XXMAXDIRECTMEMORYSIZEEQUALS, (UDATA) -1, TRUE);
 			if (OPTION_OK != parseError) {

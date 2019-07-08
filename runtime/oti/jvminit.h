@@ -453,6 +453,9 @@ enum INIT_STAGE {
 #define VMOPT_XXTRANSPARENT_HUGEPAGE "-XX:+TransparentHugePage"
 #define VMOPT_XXNOTRANSPARENT_HUGEPAGE "-XX:-TransparentHugePage"
 
+#define VMOPT_XXDEEP_SCAN "-XX:+DeepScan"
+#define VMOPT_XXNODEEP_SCAN "-XX:-DeepScan"
+
 #define MAPOPT_AGENTLIB_JDWP_EQUALS "-agentlib:jdwp="
 
 #define MAPOPT_XCOMP "-Xcomp"
