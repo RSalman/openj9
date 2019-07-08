@@ -163,13 +163,15 @@ calculateInstanceDescription( J9VMThread *vmThread, J9Class *ramClass, J9Class *
 	 * set the corresponding description bit for each 
 	 */
 	{
+		BOOLEAN deepScanEnabled =  J9_ARE_ALL_BITS_SET(((vmThread)->javaVM)->extendedRuntimeFlags2, J9_EXTENDED_RUNTIME2_ENABLE_DEEPSCAN);
+
 		while (walkResult->field) {
 			UDATA slotOffset = walkResult->offset / (objectSlotSize * slotsPerShapeElement);
 			J9UTF8 *fieldSig = J9ROMFIELDSHAPE_SIGNATURE(walkResult->field);
 			U_8 *fieldSigBytes = J9UTF8_DATA(fieldSig);
 			U_16 fieldSigLength = J9UTF8_LENGTH(fieldSig);
 
-			if (FALSE != ((vmThread)->javaVM)->deepScanEnabled) {
+			if (FALSE != deepScanEnabled) {
 				/* If the field is self referencing then store the offset to it (at most 2). Self referencing fields are to be scanned with priority during GC */
 				if (((ramClass->selfReferencingField1 == 0) || (ramClass->selfReferencingField2 == 0)) && J9UTF8_DATA_EQUALS(J9UTF8_DATA(className), J9UTF8_LENGTH(className), fieldSigBytes + 1, fieldSigLength - 2)) {
 					if (ramClass->selfReferencingField1 == 0) {

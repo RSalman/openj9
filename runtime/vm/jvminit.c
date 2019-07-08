@@ -1974,10 +1974,10 @@ IDATA VMInitStages(J9JavaVM *vm, IDATA stage, void* reserved) {
 			argIndex = FIND_AND_CONSUME_ARG(EXACT_MATCH, VMOPT_XXDEEP_SCAN, NULL);
 			argIndex2 = FIND_AND_CONSUME_ARG(EXACT_MATCH, VMOPT_XXNODEEP_SCAN, NULL);
 
-			/* Enable -XX:+DeepScan by default */
-			vm->deepScanEnabled = TRUE;
+			/* Enable Deep Structure Priority Scan by default */
+			vm->extendedRuntimeFlags2 |= J9_EXTENDED_RUNTIME2_ENABLE_DEEPSCAN;
 			if (argIndex2 > argIndex) {
-				vm->deepScanEnabled = FALSE;
+				vm->extendedRuntimeFlags2 &= ~J9_EXTENDED_RUNTIME2_ENABLE_DEEPSCAN;
 			}
 
 			parseError = setMemoryOptionToOptElse(vm, &(vm->directByteBufferMemoryMax),
