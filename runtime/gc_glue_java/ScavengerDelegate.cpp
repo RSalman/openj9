@@ -269,7 +269,7 @@ MM_ScavengerDelegate::getObjectScanner(MM_EnvironmentStandard *env, omrobjectptr
 
 	switch(_extensions->objectModel.getScanType(clazzPtr)) {
 	case GC_ObjectModel::SCAN_MIXED_OBJECT_LINKED:
-		_extensions->scavenger->deepScan(env, objectPtr, clazzPtr->selfReferencingField1, clazzPtr->selfReferencingField2);
+		//_extensions->scavenger->deepScan(env, objectPtr, clazzPtr->selfReferencingField1, clazzPtr->selfReferencingField2);
 		/* Fall through and treat as mixed object (create mixed object scanner) */
 	case GC_ObjectModel::SCAN_ATOMIC_MARKABLE_REFERENCE_OBJECT:
 	case GC_ObjectModel::SCAN_MIXED_OBJECT:
