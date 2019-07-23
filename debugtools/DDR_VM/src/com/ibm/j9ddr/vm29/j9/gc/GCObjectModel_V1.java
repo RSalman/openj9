@@ -272,6 +272,8 @@ public UDATA getTotalFootprintInBytesWithHeader(J9ObjectPointer object) throws C
 				result = SCAN_REFERENCE_MIXED_OBJECT;
 			} else if (J9ClassHelper.classFlags(clazz).anyBitsIn(J9AccClassGCSpecial)) {
 				result = getSpecialClassScanType(clazz);
+			} else if (!clazz.selfReferencingField1().isZero()) {
+				result = SCAN_MIXED_OBJECT;
 			} else {
 				result = SCAN_MIXED_OBJECT;
 			}
