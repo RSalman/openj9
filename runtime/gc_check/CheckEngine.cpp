@@ -104,13 +104,10 @@ GC_CheckEngine::verifyOwnableSynchronizerObjectCounts()
 {
 	bool ret = true;
 
-	if (!MM_GCExtensions::getExtensions(_javaVM)->isConcurrentScavengerEnabled()) {
-		if ((UNINITIALIZED_SIZE_FOR_OWNABLESYNCHRONIER != _ownableSynchronizerObjectCountOnList) && (UNINITIALIZED_SIZE_FOR_OWNABLESYNCHRONIER != _ownableSynchronizerObjectCountOnHeap)) {
-			if (_ownableSynchronizerObjectCountOnList != _ownableSynchronizerObjectCountOnHeap) {
-				PORT_ACCESS_FROM_PORT(_portLibrary);
-				j9tty_printf(PORTLIB, "  <gc check: found count=%zu of OwnableSynchronizerObjects on Heap doesn't match count=%zu on lists>\n", _ownableSynchronizerObjectCountOnHeap, _ownableSynchronizerObjectCountOnList);
-				ret = false;
-			}
+	if ((UNINITIALIZED_SIZE_FOR_OWNABLESYNCHRONIER != _ownableSynchronizerObjectCountOnList) && (UNINITIALIZED_SIZE_FOR_OWNABLESYNCHRONIER != _ownableSynchronizerObjectCountOnHeap)) {
+		if (_ownableSynchronizerObjectCountOnList != _ownableSynchronizerObjectCountOnHeap) {
+			PORT_ACCESS_FROM_PORT(_portLibrary);
+			j9tty_printf(PORTLIB, "  <gc check: found count=%zu of OwnableSynchronizerObjects on Heap doesn't match count=%zu on lists>\n", _ownableSynchronizerObjectCountOnHeap, _ownableSynchronizerObjectCountOnList);				ret = false;
 		}
 	}
 
@@ -1066,7 +1063,7 @@ GC_CheckEngine::checkObjectHeap(J9JavaVM *javaVM, J9MM_IterateObjectDescriptor *
 		result = userData.result;
 	}
 
-	if (!extensions->isConcurrentScavengerEnabled()) {
+
 		/* check Ownable Synchronizer Object consistency */
 		if ((OBJECT_HEADER_SHAPE_MIXED == J9GC_CLASS_SHAPE(clazz)) && (0 != (J9CLASS_FLAGS(clazz) & J9AccClassOwnableSynchronizer))) {
 			if (NULL == extensions->accessBarrier->isObjectInOwnableSynchronizerList(objectDesc->object)) {
@@ -1076,7 +1073,6 @@ GC_CheckEngine::checkObjectHeap(J9JavaVM *javaVM, J9MM_IterateObjectDescriptor *
 				_ownableSynchronizerObjectCountOnHeap += 1;
 			}
 		}
-	}
 
 	if (J9MODRON_SLOT_ITERATOR_OK == result) {
 		/* this heap object is OK. Record it in the cache in case we find a pointer to it soon */

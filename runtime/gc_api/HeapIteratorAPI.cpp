@@ -504,6 +504,8 @@ j9mm_iterate_all_ownable_synchronizer_objects(J9VMThread *vmThread, J9PortLibrar
 	J9MM_IterateRegionDescriptor regionDesc;
 	jvmtiIterationControl returnCode = JVMTI_ITERATION_CONTINUE;
 
+	javaVM->memoryManagerFunctions->j9gc_modron_complete_collect(vmThread);
+
 	while (NULL != ownableSynchronizerObjectList) {
 		J9Object *objectPtr = ownableSynchronizerObjectList->getHeadOfList();
 		while (NULL != objectPtr) {

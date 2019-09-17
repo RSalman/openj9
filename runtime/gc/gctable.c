@@ -200,6 +200,7 @@ J9MemoryManagerFunctions MemoryManagerFunctions = {
 	j9gc_modron_global_collect,
 	j9gc_modron_global_collect_with_overrides,
 	j9gc_modron_local_collect,
+	j9gc_modron_complete_collect,
 	j9gc_all_object_and_vm_slots_do,
 	j9mm_iterate_heaps,
 	j9mm_iterate_spaces,

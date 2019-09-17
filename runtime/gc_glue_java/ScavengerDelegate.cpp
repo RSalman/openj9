@@ -174,12 +174,14 @@ MM_ScavengerDelegate::workerSetupForGC_clearEnvironmentLangStats(MM_EnvironmentB
 void
 MM_ScavengerDelegate::reportScavengeEnd(MM_EnvironmentBase * envBase, bool scavengeSuccessful)
 {
-	Assert_GC_true_with_message2(envBase, _extensions->scavengerJavaStats._ownableSynchronizerCandidates >= _extensions->scavengerJavaStats._ownableSynchronizerTotalSurvived,
-			"[MM_ScavengerDelegate::reportScavengeEnd]: _extensions->scavengerJavaStats: _ownableSynchronizerCandidates=%zu < _ownableSynchronizerTotalSurvived=%zu\n", _extensions->scavengerJavaStats._ownableSynchronizerCandidates, _extensions->scavengerJavaStats._ownableSynchronizerTotalSurvived);
+	//Assert_GC_true_with_message2(envBase, _extensions->scavengerJavaStats._ownableSynchronizerCandidates >= _extensions->scavengerJavaStats._ownableSynchronizerTotalSurvived,
+	//		"[MM_ScavengerDelegate::reportScavengeEnd]: _extensions->scavengerJavaStats: _ownableSynchronizerCandidates=%zu < _ownableSynchronizerTotalSurvived=%zu\n", _extensions->scavengerJavaStats._ownableSynchronizerCandidates, _extensions->scavengerJavaStats._ownableSynchronizerTotalSurvived);
 
 	if (!scavengeSuccessful) {
 		/* for backout case, the ownableSynchronizerObject lists is restored before scavenge, so all of candidates are survived */
 		_extensions->scavengerJavaStats._ownableSynchronizerTotalSurvived = _extensions->scavengerJavaStats._ownableSynchronizerCandidates;
+		//PORT_ACCESS_FROM_ENVIRONMENT(envBase);
+		//j9tty_printf(PORTLIB,  "reportScavengeEnd: _ownableSynchronizerTotalSurvived Merge: %i = %i\n", _extensions->scavengerJavaStats._ownableSynchronizerTotalSurvived, _extensions->scavengerJavaStats._ownableSynchronizerCandidates);
 
 		_extensions->scavengerJavaStats._ownableSynchronizerNurserySurvived = _extensions->scavengerJavaStats._ownableSynchronizerCandidates;
 	}
@@ -197,7 +199,12 @@ MM_ScavengerDelegate::mergeGCStats_mergeLangStats(MM_EnvironmentBase * envBase)
 	finalGCJavaStats->_unfinalizedEnqueued += scavJavaStats->_unfinalizedEnqueued;
 
 	finalGCJavaStats->_ownableSynchronizerCandidates += scavJavaStats->_ownableSynchronizerCandidates;
+
+	//PORT_ACCESS_FROM_ENVIRONMENT(env);
+	//j9tty_printf(PORTLIB,  "mergeGCStats_mergeLangStats: _ownableSynchronizerTotalSurvived Merge: %i += %i\n", finalGCJavaStats->_ownableSynchronizerTotalSurvived, scavJavaStats->_ownableSynchronizerTotalSurvived);
 	finalGCJavaStats->_ownableSynchronizerTotalSurvived += scavJavaStats->_ownableSynchronizerTotalSurvived;
+
+
 	finalGCJavaStats->_ownableSynchronizerNurserySurvived += scavJavaStats->_ownableSynchronizerNurserySurvived;
 
 	finalGCJavaStats->_weakReferenceStats.merge(&scavJavaStats->_weakReferenceStats);
@@ -333,11 +340,11 @@ MM_ScavengerDelegate::getObjectScanner(MM_EnvironmentStandard *env, omrobjectptr
 		}
 		break;
 	case GC_ObjectModel::SCAN_OWNABLESYNCHRONIZER_OBJECT:
-		if (!_extensions->isConcurrentScavengerEnabled()) {
+		//if (!_extensions->isConcurrentScavengerEnabled()) {
 			if (GC_ObjectScanner::isHeapScan(flags)) {
 				private_addOwnableSynchronizerObjectInList(env, objectPtr);
 			}
-		}
+		//}
 		objectScanner = GC_MixedObjectScanner::newInstance(env, objectPtr, allocSpace, flags);
 		break;
 	case GC_ObjectModel::SCAN_POINTER_ARRAY_OBJECT:
@@ -603,6 +610,12 @@ MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentS
 		 * the assertion partially could detect duplication case */
 		Assert_MM_false(_extensions->scavenger->isObjectInNewSpace(link));
 		env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, object);
+
+		//PORT_ACCESS_FROM_ENVIRONMENT(env);
+		//j9tty_printf(PORTLIB,  "private_addOwnableSynchronizerObjectInList: _ownableSynchronizerTotalSurvived += 1 (%p)\n", object);
+
+
+
 		env->getGCEnvironment()->_scavengerJavaStats._ownableSynchronizerTotalSurvived += 1;
 		if (_extensions->scavenger->isObjectInNewSpace(object)) {
 			env->getGCEnvironment()->_scavengerJavaStats._ownableSynchronizerNurserySurvived += 1;

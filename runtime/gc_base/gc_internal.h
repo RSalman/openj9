@@ -171,6 +171,7 @@ extern J9_CFUNC UDATA j9gc_modron_global_collect(J9VMThread *vmThread);
 extern J9_CFUNC UDATA j9gc_modron_global_collect_with_overrides(J9VMThread *vmThread, U_32 overrideFlags);
 extern J9_CFUNC UDATA j9gc_get_initial_heap_size(J9JavaVM *javaVM);
 extern J9_CFUNC UDATA j9gc_modron_local_collect(J9VMThread *vmThread);
+extern J9_CFUNC UDATA j9gc_modron_complete_collect(J9VMThread *vmThread);
 extern J9_CFUNC I_32 referenceArrayCopy(J9VMThread *vmThread, J9IndexableObject *srcObject, J9IndexableObject *destObject, fj9object_t *srcAddress, fj9object_t *destAddress, I_32 lengthInSlots);
 extern J9_CFUNC void j9gc_objaccess_indexableStoreI64(J9VMThread *vmThread, J9IndexableObject *destObject, I_32 index, I_64 value, UDATA isVolatile);
 extern J9_CFUNC void J9WriteBarrierJ9ClassStore(J9VMThread *vmThread, J9Class *destinationJ9Class, j9object_t storedObject);

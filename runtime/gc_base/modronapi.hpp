@@ -60,6 +60,7 @@ extern "C" {
 
 UDATA j9gc_modron_global_collect(J9VMThread *vmThread);
 UDATA j9gc_modron_local_collect(J9VMThread *vmThread);
+UDATA j9gc_modron_complete_collect(J9VMThread *vmThread);
 UDATA j9gc_heap_total_memory(J9JavaVM *javaVM);
 UDATA j9gc_heap_free_memory(J9JavaVM *javaVM);
 UDATA j9gc_is_garbagecollection_disabled(J9JavaVM *javaVM);

@@ -58,7 +58,7 @@ MM_ScavengerBackOutScanner::scanAllSlots(MM_EnvironmentBase *env)
 	/* Walk roots fixing up pointers through reverse forwarding information */
 	MM_RootScanner::scanAllSlots(env);
 
-	if (!_extensions->isConcurrentScavengerEnabled()) {
+	//if (!_extensions->isConcurrentScavengerEnabled()) {
 	/* Back out Ownable Synchronizer Processing */
 		MM_HeapRegionDescriptorStandard *region = NULL;
 		GC_HeapRegionIteratorStandard regionIterator(_extensions->heapRegionManager);
@@ -69,7 +69,7 @@ MM_ScavengerBackOutScanner::scanAllSlots(MM_EnvironmentBase *env)
 				list->backoutList();
 			}
 		}
-	}
+	//}
 
  	/* Done backout */
 	Assert_MM_true(env->getGCEnvironment()->_referenceObjectBuffer->isEmpty());

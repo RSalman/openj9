@@ -102,6 +102,20 @@ j9gc_modron_local_collect(J9VMThread *vmThread)
 }
 
 UDATA
+j9gc_modron_complete_collect(J9VMThread *vmThread)
+{
+	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(vmThread);
+
+	if (extensions->isConcurrentScavengerInProgress()) {
+		PORT_ACCESS_FROM_JAVAVM(vmThread->javaVM);
+		j9tty_printf(PORTLIB, "{j9mm_iterate_all_ownable_synchronizer_objects: ********** Concurrent-Scavenger-In-Progress ********** }\n");
+		j9gc_modron_local_collect(vmThread);
+	}
+
+	return 0;
+}
+
+UDATA
 j9gc_heap_total_memory(J9JavaVM *javaVM)
 {
 	MM_Heap *heap = MM_GCExtensions::getExtensions(javaVM)->getHeap();
