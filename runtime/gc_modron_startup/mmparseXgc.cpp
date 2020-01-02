@@ -657,6 +657,20 @@ j9gc_initialize_parse_gc_colon(J9JavaVM *javaVM, char **scan_start)
 		goto _exit;
 	}	
 	
+	if(try_scan(scan_start, "fliprateThreshold=")) {
+			UDATA value;
+			if(!scan_udata_helper(javaVM, scan_start, &value, "fliprateThreshold=")) {
+				goto _error;
+			}
+			if(value > 100) {
+				j9nls_printf(PORTLIB, J9NLS_ERROR, J9NLS_GC_OPTIONS_INTEGER_OUT_OF_RANGE, "fliprateThreshold=", (UDATA)0, (UDATA)100);
+				goto _error;
+			}
+			extensions->fliprateThreshold = ((double)value) / ((double)100);
+			goto _exit;
+	}
+
+
 	if(try_scan(scan_start, "dnssExpectedTimeRatioMinimum=")) {
 		UDATA value;
 		if(!scan_udata_helper(javaVM, scan_start, &value, "dnssExpectedTimeRatioMinimum=")) {
@@ -1434,6 +1448,13 @@ gcParseXgcArguments(J9JavaVM *vm, char *optArg)
 			continue;
 		}
 #endif /* defined(J9VM_GC_GENERATIONAL) && (defined(WIN32) && !defined(WIN64)) */
+
+
+		if (try_scan(&scan_start, "enablefliprate")) {
+			extensions->enableFlip = true;
+			continue;
+		}
+
 
 		/* Check for a user-specified region size for the fixed-sized table regions */
 		if (try_scan(&scan_start, "regionSize=")) {
