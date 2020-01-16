@@ -212,6 +212,30 @@ j9gc_initialize_parse_gc_colon(J9JavaVM *javaVM, char **scan_start)
 	
 #endif /* J9VM_GC_LARGE_OBJECT_AREA) */	
 
+	if(try_scan(scan_start, "p1")) {
+		extensions->p1 = true;
+		goto _exit;
+	}
+
+	if(try_scan(scan_start, "p2")) {
+		extensions->p2 = true;
+		goto _exit;
+	}
+
+	if(try_scan(scan_start, "p3")) {
+		extensions->p3 = true;
+		goto _exit;
+	}
+
+	if(try_scan(scan_start, "p4")) {
+		extensions->p4 = true;
+		goto _exit;
+	}
+
+	if(try_scan(scan_start, "p5")) {
+		extensions->p5 = true;
+		goto _exit;
+	}
 
 	if(try_scan(scan_start, "threadCount=")) {
 		if(!scan_udata_helper(javaVM, scan_start, &extensions->gcThreadCount, "threadCount=")) {
