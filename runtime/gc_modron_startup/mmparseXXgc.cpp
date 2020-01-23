@@ -804,6 +804,21 @@ gcParseXXgcArguments(J9JavaVM *vm, char *optArg)
 			continue ;
 		}
 
+		if (try_scan(&scan_start, "dynamicThreadsHeuristicBooster=")) {
+			/* Read in restricted scan cache size */
+			if(!scan_udata_helper(vm, &scan_start, &extensions->scavengerDynamicThreadsHeuristicBooster, "dynamicThreadsHeuristicBooster=")) {
+				returnValue = JNI_EINVAL;
+				break;
+			}
+
+			if(0 == extensions->scavengerDynamicThreadsHeuristicBooster) {
+				j9nls_printf(PORTLIB,J9NLS_ERROR, J9NLS_GC_OPTIONS_VALUE_MUST_BE_ABOVE, "-XXgc:dynamicThreadsHeuristicBooster", (UDATA)0);
+				returnValue = JNI_EINVAL;
+				break;
+			}
+			continue;
+		}
+
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		if (try_scan(&scan_start, "debugConcurrentScavengerPageAlignment")) {
 			extensions->setDebugConcurrentScavengerPageAlignment(true);
