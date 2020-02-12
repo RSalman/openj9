@@ -52,12 +52,15 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 	TgcParallelExtensions *parallelExtensions = &tgcExtensions->_parallel;
 	PORT_ACCESS_FROM_JAVAVM(javaVM);
 
+	bool print = false;
+
 
 	uint64_t RSScanTotalTime = parallelExtensions->RSScanEndTime - parallelExtensions->RSScanStartTime;
 
 	if (0 != RSScanTotalTime) {
+		if (print) {
 		tgcExtensions->printf("RS  :   busy  stall  acquire   release  exchange \n");
-
+		}
 		GC_VMThreadListIterator markThreadListIterator(vmThread);
 		J9VMThread *walkThread = NULL;
 		while ((walkThread = markThreadListIterator.nextVMThread()) != NULL) {
@@ -72,6 +75,7 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 #endif /* defined(J9VM_GC_MODRON_STANDARD) */
 				}
 				if (shouldIncludeThread) {
+					if (print) {
 					tgcExtensions->printf("%4zu:  %5llu  %5llu   %5zu     %5zu     %5zu\n",
 						env->getSlaveID(),
 						j9time_hires_delta(parallelExtensions->RSScanStartTime, env->_workPacketStatsRSScan.getStallTime(), J9PORT_TIME_DELTA_IN_MILLISECONDS),
@@ -79,6 +83,7 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 						env->_workPacketStatsRSScan.workPacketsAcquired,
 						env->_workPacketStatsRSScan.workPacketsReleased,
 						env->_workPacketStatsRSScan.workPacketsExchanged);
+					}
 				}
 			}
 		}
@@ -87,8 +92,9 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 	uint64_t markTotalTime = parallelExtensions->markEndTime - parallelExtensions->markStartTime;
 
 	if (0 != markTotalTime) {
+		if (print) {
 		tgcExtensions->printf("Mark:   busy  stall  acquire   release  exchange split array  split size\n");
-
+		}
 		GC_VMThreadListIterator markThreadListIterator(vmThread);
 		J9VMThread *walkThread = NULL;
 		while ((walkThread = markThreadListIterator.nextVMThread()) != NULL) {
@@ -119,6 +125,7 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 					if (0 != splitArraysProcessed) {
 						avgSplitSize = splitArraysAmount / splitArraysProcessed;
 					}
+					if (print) {
 					tgcExtensions->printf("%4zu:  %5llu  %5llu    %5zu     %5zu     %5zu       %5zu     %7zu\n",
 						env->getSlaveID(),
 						j9time_hires_delta(0, markTotalTime - (markStatsStallTime + env->_workPacketStats.getStallTime()), J9PORT_TIME_DELTA_IN_MILLISECONDS),
@@ -128,6 +135,7 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 						env->_workPacketStats.workPacketsExchanged,
 						splitArraysProcessed,
 						avgSplitSize);
+					}
 				}
 	
 				/* TODO: VLHGC doesn't record gc count yet, allowing us to determine if thread participated */			
@@ -163,11 +171,11 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 			masterSweepMergeTime = masterEnv->_sweepStats.mergeTime;
 #endif /* defined(J9VM_GC_MODRON_STANDARD) */
 		}
-
+		if (print) {
 		tgcExtensions->printf("Sweep:  busy   idle sections %zu  merge %llu\n",
 			masterSweepChunksTotal,
 			j9time_hires_delta(0, masterSweepMergeTime, J9PORT_TIME_DELTA_IN_MILLISECONDS));
-
+		}
 
 		GC_VMThreadListIterator sweepThreadListIterator(vmThread);
 		J9VMThread *walkThread = NULL;
@@ -196,11 +204,13 @@ tgcHookGlobalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, 
 				parallelExtensions->sweepEndTime = 0;
 
 				if (shouldIncludeThread) {
+					if (print) {
 					tgcExtensions->printf("%4zu: %6llu %6llu %8zu\n",
 						env->getSlaveID(),
 						j9time_hires_delta(0, sweepTotalTime - sweepIdleTime, J9PORT_TIME_DELTA_IN_MILLISECONDS),
 						j9time_hires_delta(0, sweepIdleTime, J9PORT_TIME_DELTA_IN_MILLISECONDS),
 						sweepChunksProcessed);
+					}
 				}
 			}
 		}
@@ -248,13 +258,20 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	int64_t timeInMillis = j9time_current_time_millis();
 	j9str_ftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%S", timeInMillis);
 	tgcExtensions->printf("\n");
-	tgcExtensions->printf("Scavenger parallel and progress stats, timestamp=\"%s.%ld\"\n", timestamp, timeInMillis % 1000);
 
-	tgcExtensions->printf("          gc thrID     busy    stall   acquire   release   acquire   release   acquire     split avg split  alias to    deep      total deepest\n");
-	tgcExtensions->printf("                   (micros) (micros)  freelist  freelist  scanlist  scanlist      lock    arrays arraysize copycache   lists  deep objs    list\n");
+	bool print = false;
+
+	uint64_t totalSumUpdatesHARD = 0;
+	uint64_t totalSumUpdatesSOFT = 0;
 
 	scavengeTotalTime = extensions->scavengerStats._endTime - extensions->scavengerStats._startTime;
 	uintptr_t gcCount = extensions->scavengerStats._gcCount;
+	if(print) {
+	tgcExtensions->printf("Scavenger parallel and progress stats, timestamp=\"%s.%ld\"\n", timestamp, timeInMillis % 1000);
+
+	tgcExtensions->printf("          gc thrID     busy    stall   acquire   release   acquire   release   acquire     split avg split  alias to    deep      total deepest    Total\n");
+	tgcExtensions->printf("                   (micros) (micros)  freelist  freelist  scanlist  scanlist      lock    arrays arraysize copycache   lists  deep objs    list    Updates\n");
+	}
 
 	GC_VMThreadListIterator scavengeThreadListIterator(vmThread);
 	while ((walkThread = scavengeThreadListIterator.nextVMThread()) != NULL) {
@@ -267,7 +284,8 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 				if (0 != env->_scavengerStats._arraySplitCount) {
 					avgArraySplitAmount = env->_scavengerStats._arraySplitAmount / env->_scavengerStats._arraySplitCount;
 				}
-				tgcExtensions->printf("SCV.T %6zu  %4zu %8llu %8llu     %5zu     %5zu     %5zu     %5zu     %5zu     %5zu     %5zu   %7zu  %6zu     %6zu  %6zu \n",
+				if(print){
+				tgcExtensions->printf("SCV.T %6zu  %4zu %8llu %8llu     %5zu     %5zu     %5zu     %5zu     %5zu     %5zu     %5zu   %7zu  %6zu     %6zu  %6zu    %6zu \n",
 					gcCount,
 					env->getSlaveID(),
 					j9time_hires_delta(0, scavengeTotalTime - env->_scavengerStats.getStallTime(), J9PORT_TIME_DELTA_IN_MICROSECONDS),
@@ -282,12 +300,19 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 					env->_scavengerStats._aliasToCopyCacheCount,
 					env->_scavengerStats._totalDeepStructures,
 					env->_scavengerStats._totalObjsDeepScanned,
-					env->_scavengerStats._depthDeepestStructure);
+					env->_scavengerStats._depthDeepestStructure,
+					env->_totalUpdates);
+				}
+
+				//tgcExtensions->printf("\t%6zu\n", env->_totalUpdates);
+				totalSumUpdatesHARD += env->_totalUpdates;
+				env->_totalUpdates = 0;
+
 			}
+
 		}
 	}
-
-	tgcExtensions->printf("\n");
+//	}
 	tgcExtensions->printf("          gc micros   idle   busy active  lists   caches   copied  scanned updates scaling");
 	if (extensions->isConcurrentScavengerEnabled()) {
 		tgcExtensions->printf("  rb-copy rb-update\n");
@@ -303,13 +328,27 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	uint64_t prevReadObjectBarrierCopy = 0;
 	uint64_t prevReadObjectBarrierUpdate = 0;
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
+	double threads = 0.0;
 	while (historyRecord < endRecord) {
 		uint64_t elapsedMicros = extensions->copyScanRatio.getSpannedMicros(env, historyRecord);
-		double majorUpdates = (double)historyRecord->updates / (double)SCAVENGER_THREAD_UPDATES_PER_MAJOR_UPDATE;
+		//double majorUpdates = (double)historyRecord->updates / (double)SCAVENGER_THREAD_UPDATES_PER_MAJOR_UPDATE;
+		double majorUpdates = (double)historyRecord->majorUpdates;
 		double lists = (double)historyRecord->lists / majorUpdates;
 		double caches = (double)historyRecord->caches / majorUpdates;
-		double threads = (double)historyRecord->threads / majorUpdates;
+
+		if(threads != 0.0) {
+			Assert_MM_true(threads == ((double)historyRecord->threads / majorUpdates));
+		}
+		threads = (double)historyRecord->threads / majorUpdates;
+
 		double waitingThreads = (double)historyRecord->waits / (double)historyRecord->updates;
+
+		if(waitingThreads > 64) {
+			tgcExtensions->printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t Threads: %6.1f Waiting Threads: %6.1f [Waits: %7zu Updates: %7zu] \n", threads, waitingThreads, historyRecord->waits, historyRecord->updates);
+		}
+
+		totalSumUpdatesSOFT += historyRecord->updates;
+
 		double busyThreads = threads - waitingThreads;
 		double scalingFactor = extensions->copyScanRatio.getScalingFactor(env, historyRecord);
 		tgcExtensions->printf("SCV.H %6zu %6zu %6.1f %6.1f %6.1f %6.1f   %6.1f %8zu %8zu %7zu  %0.4f",
@@ -329,16 +368,31 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	}
 
 	tgcExtensions->printf("\n");
-	tgcExtensions->printf("     \tgc\tleaf\talias\tsync-#\tsync-ms\twork-#\twork-ms\tend-#\tend-ms\tscaling\tupdates\toverflow\n");
-	tgcExtensions->printf("SCV.M\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%.3f\t%lu\t%lu\n", gcCount,
+	tgcExtensions->printf("     \tgc\tleaf\talias\tsync-#\tsync-ms\twork-#\twork-ms\tend-#\tend-ms\tscaling\tupdates\toverflow\tflush\tMissed\n");
+	tgcExtensions->printf("SCV.M\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%.3f\t%lu\t%lu\t%lu\t%lu\n", gcCount,
 		extensions->scavengerStats._leafObjectCount, extensions->scavengerStats._aliasToCopyCacheCount,
 		extensions->scavengerStats._syncStallCount, j9time_hires_delta(0, extensions->scavengerStats._syncStallTime, J9PORT_TIME_DELTA_IN_MICROSECONDS),
 		extensions->scavengerStats._workStallCount, j9time_hires_delta(0, extensions->scavengerStats._workStallTime, J9PORT_TIME_DELTA_IN_MICROSECONDS),
 		extensions->scavengerStats._completeStallCount, j9time_hires_delta(0, extensions->scavengerStats._completeStallTime, J9PORT_TIME_DELTA_IN_MICROSECONDS),
-		extensions->copyScanRatio.getScalingFactor(env), extensions->copyScanRatio.getScalingUpdateCount(), extensions->copyScanRatio.getOverflowCount()
+		extensions->copyScanRatio.getScalingFactor(env), extensions->copyScanRatio.getScalingUpdateCount(), extensions->copyScanRatio.getOverflowCount(), extensions->copyScanRatio.getFlushCount(), extensions->copyScanRatio.getMissedCount()
 	);
 
-	tgcExtensions->printf("\n");
+
+	uintptr_t totalMissed = (totalSumUpdatesHARD - totalSumUpdatesSOFT);
+	double percentage = ((double) totalMissed/ (double) totalSumUpdatesHARD)* 100.0;
+
+	tgcExtensions->printf("     Expected  Record Updates  Total Missed    threads Flushed Overflow\n");
+	tgcExtensions->printf("SCV.Z  %4lu        %4lu        %4lu (%4.1f%%)    %4.1f    %4lu      %lu \n",
+			totalSumUpdatesHARD,
+			totalSumUpdatesSOFT,
+			totalMissed,
+			percentage,
+			threads,
+			extensions->copyScanRatio.getFlushCount(),
+			extensions->copyScanRatio.getOverflowCount());
+
+	tgcExtensions->printf("------------------------------------------------------------------------------------------------\n");
+	if(print) {
 	tgcExtensions->printf("SCV.D\t%lu", gcCount);
 	for (uint32_t i = 0; i < OMR_SCAVENGER_DISTANCE_BINS; i++) {
 		tgcExtensions->printf("\t%lu", extensions->scavengerStats._copy_distance_counts[i]);
@@ -351,6 +405,7 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 		tgcExtensions->printf("\t%lu", extensions->scavengerStats._copy_cachesize_counts[i]);
 	}
 	tgcExtensions->printf("\t%lu\n", extensions->scavengerStats._copy_cachesize_sum);
+	}
 }
 #endif /* J9VM_GC_MODRON_SCAVENGER */
 
