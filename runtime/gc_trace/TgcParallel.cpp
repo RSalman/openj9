@@ -343,10 +343,6 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 
 		double waitingThreads = (double)historyRecord->waits / (double)historyRecord->updates;
 
-		if(waitingThreads > 64) {
-			tgcExtensions->printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t Threads: %6.1f Waiting Threads: %6.1f [Waits: %7zu Updates: %7zu] \n", threads, waitingThreads, historyRecord->waits, historyRecord->updates);
-		}
-
 		totalSumUpdatesSOFT += historyRecord->updates;
 
 		double busyThreads = threads - waitingThreads;
@@ -368,27 +364,26 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	}
 
 	tgcExtensions->printf("\n");
-	tgcExtensions->printf("     \tgc\tleaf\talias\tsync-#\tsync-ms\twork-#\twork-ms\tend-#\tend-ms\tscaling\tupdates\toverflow\tflush\tMissed\n");
-	tgcExtensions->printf("SCV.M\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%.3f\t%lu\t%lu\t%lu\t%lu\n", gcCount,
+	tgcExtensions->printf("     \tgc\tleaf\talias\tsync-#\tsync-ms\twork-#\twork-ms\tend-#\tend-ms\tscaling\tupdates\toverflow\n");
+	tgcExtensions->printf("SCV.M\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%lu\t%.3f\t%lu\t%lu\n", gcCount,
 		extensions->scavengerStats._leafObjectCount, extensions->scavengerStats._aliasToCopyCacheCount,
 		extensions->scavengerStats._syncStallCount, j9time_hires_delta(0, extensions->scavengerStats._syncStallTime, J9PORT_TIME_DELTA_IN_MICROSECONDS),
 		extensions->scavengerStats._workStallCount, j9time_hires_delta(0, extensions->scavengerStats._workStallTime, J9PORT_TIME_DELTA_IN_MICROSECONDS),
 		extensions->scavengerStats._completeStallCount, j9time_hires_delta(0, extensions->scavengerStats._completeStallTime, J9PORT_TIME_DELTA_IN_MICROSECONDS),
-		extensions->copyScanRatio.getScalingFactor(env), extensions->copyScanRatio.getScalingUpdateCount(), extensions->copyScanRatio.getOverflowCount(), extensions->copyScanRatio.getFlushCount(), extensions->copyScanRatio.getMissedCount()
+		extensions->copyScanRatio.getScalingFactor(env), extensions->copyScanRatio.getScalingUpdateCount(), extensions->copyScanRatio.getOverflowCount()
 	);
 
 
 	uintptr_t totalMissed = (totalSumUpdatesHARD - totalSumUpdatesSOFT);
 	double percentage = ((double) totalMissed/ (double) totalSumUpdatesHARD)* 100.0;
 
-	tgcExtensions->printf("     Expected  Record Updates  Total Missed    threads Flushed Overflow\n");
-	tgcExtensions->printf("SCV.Z  %4lu        %4lu        %4lu (%4.1f%%)    %4.1f    %4lu      %lu \n",
+	tgcExtensions->printf("     Expected  Record Updates  Total Missed    threads Overflow\n");
+	tgcExtensions->printf("SCV.Z  %4lu        %4lu        %4lu (%4.1f%%)    %4.1f    %lu \n",
 			totalSumUpdatesHARD,
 			totalSumUpdatesSOFT,
 			totalMissed,
 			percentage,
 			threads,
-			extensions->copyScanRatio.getFlushCount(),
 			extensions->copyScanRatio.getOverflowCount());
 
 	tgcExtensions->printf("------------------------------------------------------------------------------------------------\n");
