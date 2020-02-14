@@ -301,13 +301,9 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 					env->_scavengerStats._totalDeepStructures,
 					env->_scavengerStats._totalObjsDeepScanned,
 					env->_scavengerStats._depthDeepestStructure,
-					env->_totalUpdates);
+					env->_scavengerStats._copyScanUpdates);
 				}
-
-				//tgcExtensions->printf("\t%6zu\n", env->_totalUpdates);
-				totalSumUpdatesHARD += env->_totalUpdates;
-				env->_totalUpdates = 0;
-
+				totalSumUpdatesHARD += env->_scavengerStats._copyScanUpdates;
 			}
 
 		}
@@ -374,7 +370,8 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	);
 
 
-	uintptr_t totalMissed = (totalSumUpdatesHARD - totalSumUpdatesSOFT);
+	uintptr_t totalMissed = (extensions->scavengerStats._copyScanUpdates - totalSumUpdatesSOFT);
+	Assert_MM_true(totalSumUpdatesHARD == extensions->scavengerStats._copyScanUpdates);
 	double percentage = ((double) totalMissed/ (double) totalSumUpdatesHARD)* 100.0;
 
 	tgcExtensions->printf("     Expected  Record Updates  Total Missed    threads Overflow\n");
