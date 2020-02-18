@@ -35,6 +35,9 @@
 #include "GCExtensions.hpp"
 #include "TgcExtensions.hpp"
 #include "VMThreadListIterator.hpp"
+#include "Dispatcher.hpp"
+
+
 
 /****************************************
  * Hook callbacks
@@ -273,6 +276,7 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	tgcExtensions->printf("                   (micros) (micros)  freelist  freelist  scanlist  scanlist      lock    arrays arraysize copycache   lists  deep objs    list    Updates\n");
 	}
 
+	double numThreads = 0.0;
 	GC_VMThreadListIterator scavengeThreadListIterator(vmThread);
 	while ((walkThread = scavengeThreadListIterator.nextVMThread()) != NULL) {
 		/* TODO: Are we guaranteed to get the threads in the right order? */
@@ -304,6 +308,7 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 					env->_scavengerStats._copyScanUpdates);
 				}
 				totalSumUpdatesHARD += env->_scavengerStats._copyScanUpdates;
+				numThreads++;
 			}
 
 		}
@@ -325,6 +330,8 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	uint64_t prevReadObjectBarrierUpdate = 0;
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	double threads = 0.0;
+
+
 	while (historyRecord < endRecord) {
 		uint64_t elapsedMicros = extensions->copyScanRatio.getSpannedMicros(env, historyRecord);
 		//double majorUpdates = (double)historyRecord->updates / (double)SCAVENGER_THREAD_UPDATES_PER_MAJOR_UPDATE;
@@ -332,11 +339,18 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 		double lists = (double)historyRecord->lists / majorUpdates;
 		double caches = (double)historyRecord->caches / majorUpdates;
 
-		if(threads != 0.0) {
-			Assert_MM_true(threads == ((double)historyRecord->threads / majorUpdates));
+		if(majorUpdates != 0) {
+			Assert_MM_true(env->getExtensions()->dispatcher->activeThreadCount() == ((double)historyRecord->threads / majorUpdates));
 		}
+
+
 		threads = (double)historyRecord->threads / majorUpdates;
 
+		if (threads != 0) {
+			Assert_MM_true((numThreads == threads) && (threads == env->getExtensions()->dispatcher->activeThreadCount()));
+		} else {
+			threads = numThreads;
+		}
 		double waitingThreads = (double)historyRecord->waits / (double)historyRecord->updates;
 
 		totalSumUpdatesSOFT += historyRecord->updates;
@@ -375,12 +389,12 @@ tgcHookLocalGcEnd(J9HookInterface** hook, uintptr_t eventNum, void* eventData, v
 	double percentage = ((double) totalMissed/ (double) totalSumUpdatesHARD)* 100.0;
 
 	tgcExtensions->printf("     Expected  Record Updates  Total Missed    threads Overflow\n");
-	tgcExtensions->printf("SCV.Z  %4lu        %4lu        %4lu (%4.1f%%)    %4.1f    %lu \n",
+	tgcExtensions->printf("SCV.Z  %4lu        %4lu        %4lu (%4.1f%%)    %4lu    %lu \n",
 			totalSumUpdatesHARD,
 			totalSumUpdatesSOFT,
 			totalMissed,
 			percentage,
-			threads,
+			env->getExtensions()->dispatcher->activeThreadCount(),
 			extensions->copyScanRatio.getOverflowCount());
 
 	tgcExtensions->printf("------------------------------------------------------------------------------------------------\n");
