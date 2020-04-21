@@ -271,6 +271,10 @@ public:
 	 * @return Linked list of ownable synchronizer objects
 	 */
 	MM_OwnableSynchronizerObjectList* getOwnableSynchronizerObjectListsExternal(J9VMThread *vmThread);
+	
+	bool checkAndVerifyOwnableSynchronizerObjectList(MM_EnvironmentBase *env);
+	uintptr_t countInList(MM_EnvironmentBase *env, J9Object *objectPtr_to_check);
+	
 	MMINLINE MM_OwnableSynchronizerObjectList* getOwnableSynchronizerObjectLists() { return ownableSynchronizerObjectLists; }
 	MMINLINE void setOwnableSynchronizerObjectLists(MM_OwnableSynchronizerObjectList* newOwnableSynchronizerObjectLists) { ownableSynchronizerObjectLists = newOwnableSynchronizerObjectLists; }
 

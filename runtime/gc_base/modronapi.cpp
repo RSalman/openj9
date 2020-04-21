@@ -989,6 +989,11 @@ ownableSynchronizerObjectCreated(J9VMThread *vmThread, j9object_t object)
 {
 	Assert_MM_true(NULL != object);
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+
+	//OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+	//omrtty_printf("\t [%u] BUFFER ADD: ownableSynchronizerObjectCreated [%p]\n", env->getSlaveID(), object);
+
+
 	env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, object);
 	MM_ObjectAllocationInterface *objectAllocation = env->_objectAllocationInterface;
 	if (NULL != objectAllocation) {

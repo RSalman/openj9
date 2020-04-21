@@ -279,6 +279,9 @@ MM_MarkingSchemeRootClearer::scanOwnableSynchronizerObjects(MM_EnvironmentBase *
 							omrobjectptr_t next = _extensions->accessBarrier->getOwnableSynchronizerLink(object);
 							if (_markingScheme->isMarked(object)) {
 								/* object was already marked. */
+								//OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+								//omrtty_printf("\t [%u] BUFFER ADD: markingRootScaner [%p]\n", env->getSlaveID(), object);
+
 								gcEnv->_ownableSynchronizerObjectBuffer->add(env, object);
 							} else {
 								/* object was not previously marked */

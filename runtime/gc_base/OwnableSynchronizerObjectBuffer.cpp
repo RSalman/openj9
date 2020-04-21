@@ -59,6 +59,11 @@ MM_OwnableSynchronizerObjectBuffer::reset()
 	_objectCount = _maxObjectCount;
 }
 
+bool
+MM_OwnableSynchronizerObjectBuffer::isFlushed() {
+	return (_head == NULL && _tail == NULL && _region == NULL && _objectCount == _maxObjectCount);
+}
+
 void 
 MM_OwnableSynchronizerObjectBuffer::flush(MM_EnvironmentBase* env)
 {
@@ -72,6 +77,21 @@ MM_OwnableSynchronizerObjectBuffer::flush(MM_EnvironmentBase* env)
 void
 MM_OwnableSynchronizerObjectBuffer::add(MM_EnvironmentBase* env, j9object_t object)
 {
+	J9Object *objectToAdd = object;
+
+
+
+	Assert_MM_true(_extensions->countInList(env, objectToAdd) == 0);
+
+	J9Object *bufferItr = _head;
+
+	while(NULL != bufferItr) {
+		if (bufferItr == objectToAdd) {
+			Assert_MM_unreachable();
+		}
+		bufferItr = _extensions->accessBarrier->getOwnableSynchronizerLink(bufferItr);
+	}
+
 	Assert_MM_true(object != _head);
 	Assert_MM_true(object != _tail);
 
