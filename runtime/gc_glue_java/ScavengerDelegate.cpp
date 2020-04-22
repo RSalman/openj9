@@ -611,10 +611,20 @@ MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentS
 		 * the assertion partially could detect duplication case */
 		Assert_MM_false(_extensions->scavenger->isObjectInNewSpace(link));
 
-//		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-//		omrtty_printf("\t [%u] BUFFER ADD: private_addOwnableSynchronizerObjectInList [%p]\n", env->getSlaveID(), object);
+		const char* ID;
 
-		env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, object);
+		if (_extensions->scavenger->isConcurrentCycleInProgress() && _extensions->scavenger->isCurrentPhaseConcurrent()) {
+			ID = "ScavengerAddOwnable [isConcurrentCycleInProgress & isCurrentPhaseConcurrent]";
+		} else if (_extensions->scavenger->isConcurrentCycleInProgress()) {
+			ID = "ScavengerAddOwnable [isConcurrentCycleInProgress]";
+		} else if (_extensions->scavenger->isCurrentPhaseConcurrent()) {
+			ID = "ScavengerAddOwnable [isCurrentPhaseConcurrent]";
+		} else {
+			ID = "ScavengerAddOwnable";
+		}
+
+
+		env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, object, ID);
 		env->getGCEnvironment()->_scavengerJavaStats._ownableSynchronizerTotalSurvived += 1;
 		if (_extensions->scavenger->isObjectInNewSpace(object)) {
 			env->getGCEnvironment()->_scavengerJavaStats._ownableSynchronizerNurserySurvived += 1;

@@ -184,10 +184,7 @@ public:
 								object = NULL;
 							}
 							/* store the object in this thread's buffer. It will be flushed to the appropriate list when necessary. */
-							
-							//OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-							//omrtty_printf("\t [%u] BUFFER ADD: Contract Root Scanner [%p]\n", env->getSlaveID(), movePtr);
-							env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, movePtr);
+							env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, movePtr, "ContractSlotScanner");
 						}
 					}
 				}

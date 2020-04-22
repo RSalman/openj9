@@ -63,9 +63,7 @@ MM_CompactSchemeFixupObject::addOwnableSynchronizerObjectInList(MM_EnvironmentBa
 	/* if isObjectInOwnableSynchronizerList() return NULL, it means the object isn't in OwnableSynchronizerList,
 	 * it could be the constructing object which would be added in the list after the construction finish later. ignore the object to avoid duplicated reference in the list. */
 	if (NULL != _extensions->accessBarrier->isObjectInOwnableSynchronizerList(objectPtr)) {
-	//	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-	//	omrtty_printf("\t [%u] BUFFER ADD: MM_CompactSchemeFixupObject [%p]\n", env->getSlaveID(), objectPtr);
-		env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, objectPtr);
+		env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, objectPtr, "CompactSchemeFixupObject");
 	}
 }
 

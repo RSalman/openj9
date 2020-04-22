@@ -74,7 +74,7 @@ public:
 	 * @param env[in] the current thread
 	 * @param object[in] the object to add
 	 */
-	void add(MM_EnvironmentBase* env, j9object_t object);
+	void add(MM_EnvironmentBase* env, j9object_t object, const char* ID = "UNKNOWN SOURCE");
 	
 	/**
 	 * Flush the contents of the buffer to the appropriate global buffers.

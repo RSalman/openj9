@@ -288,7 +288,7 @@ bool
 MM_GCExtensions::checkAndVerifyOwnableSynchronizerObjectList(MM_EnvironmentBase *envMaster)
 {
 	//uint64_t startTime, duration;
-	//OMRPORT_ACCESS_FROM_OMRPORT(envMaster->getPortLibrary());
+	OMRPORT_ACCESS_FROM_OMRPORT(envMaster->getPortLibrary());
 	//startTime = omrtime_hires_clock();
 
 	uintptr_t numberObjects = 0;
@@ -316,7 +316,14 @@ MM_GCExtensions::checkAndVerifyOwnableSynchronizerObjectList(MM_EnvironmentBase 
 
 		while (NULL != objectPtr) {
 			numberObjects++;
-			Assert_MM_true(countInList(envMaster, objectPtr) == 1);
+			uintptr_t listCount = countInList(envMaster, objectPtr);
+
+			if (listCount != 1) {
+				omrtty_printf("***** [%p] DUPLICATE ***** \n", objectPtr);
+				Assert_MM_true(listCount == 1);
+			}
+
+
 			objectPtr = barrier->getOwnableSynchronizerLink(objectPtr);
 		}
 		ownableSynchronizerObjectListItr = ownableSynchronizerObjectListItr->getNextList();

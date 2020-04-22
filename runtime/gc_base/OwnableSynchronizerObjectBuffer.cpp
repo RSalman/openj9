@@ -75,22 +75,11 @@ MM_OwnableSynchronizerObjectBuffer::flush(MM_EnvironmentBase* env)
 }
 
 void
-MM_OwnableSynchronizerObjectBuffer::add(MM_EnvironmentBase* env, j9object_t object)
+MM_OwnableSynchronizerObjectBuffer::add(MM_EnvironmentBase* env, j9object_t object, const char* ID)
 {
-	J9Object *objectToAdd = object;
 
 
-
-	Assert_MM_true(_extensions->countInList(env, objectToAdd) == 0);
-
-	J9Object *bufferItr = _head;
-
-	while(NULL != bufferItr) {
-		if (bufferItr == objectToAdd) {
-			Assert_MM_unreachable();
-		}
-		bufferItr = _extensions->accessBarrier->getOwnableSynchronizerLink(bufferItr);
-	}
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 	Assert_MM_true(object != _head);
 	Assert_MM_true(object != _tail);
@@ -100,9 +89,30 @@ MM_OwnableSynchronizerObjectBuffer::add(MM_EnvironmentBase* env, j9object_t obje
 		Assert_MM_true(NULL != _head);
 		Assert_MM_true(NULL != _tail);
 
+		J9Object *objectToAdd = object;
+		J9Object *bufferItr = _head;
+		while(NULL != bufferItr) {
+			if (bufferItr == objectToAdd) {
+				Assert_MM_unreachable();
+			}
+			bufferItr = _extensions->accessBarrier->getOwnableSynchronizerLink(bufferItr);
+		}
+
+		uintptr_t listCount = _extensions->countInList(env, objectToAdd);
+		_objectCount += 1;
+		omrtty_printf("Buffer Add: [%i] %s -> %p [REGION: %p-%p] [count: %u]\n", env->getSlaveID(), ID, object, _region->getLowAddress(), _region->getHighAddress(), _objectCount);
+
+		if (listCount != 0) {
+			OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+			omrtty_printf("*** %p was already in the list **** \n", object);
+			Assert_MM_true(listCount == 0);
+		}
+
+		//Print the region as wel to which th obecjt is being added fore
+
 		_extensions->accessBarrier->setOwnableSynchronizerLink(object, _head);
 		_head = object;
-		_objectCount += 1;					
+
 	} else {
 		MM_HeapRegionDescriptor *region = _region;
 
@@ -120,6 +130,14 @@ MM_OwnableSynchronizerObjectBuffer::add(MM_EnvironmentBase* env, j9object_t obje
 			Assert_GC_true_with_message(env, NULL != region, "Attempt to access ownable synchronizer object located outside of heap (stack allocated?) %p\n", object);
 		}
 		_region = region;
+
+		J9Object *objectToAdd = object;
+		uintptr_t listCount = _extensions->countInList(env, objectToAdd);
+		omrtty_printf("Buffer Add: [%i] %s -> %p [REGION: %p-%p] [count: %u]\n", env->getSlaveID(), ID, object, _region->getLowAddress(), _region->getHighAddress(), _objectCount);
+		if (listCount != 0) {
+			omrtty_printf("*** %p was already in the list **** \n", object);
+			Assert_MM_true(listCount == 0);
+		}
 	}
 	Assert_MM_true(_region->isAddressInRegion(object));
 }
