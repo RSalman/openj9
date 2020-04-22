@@ -41,6 +41,8 @@
 #include "ReferenceChainWalkerMarkMap.hpp"
 #include "SublistPool.hpp"
 #include "Wildcard.hpp"
+#include "OwnableSynchronizerObjectList.hpp"
+#include "OwnableSynchronizerObjectBuffer.hpp"
 
 MM_GCExtensions *
 MM_GCExtensions::newInstance(MM_EnvironmentBase *env)
@@ -280,4 +282,75 @@ MM_GCExtensions::getOwnableSynchronizerObjectListsExternal(J9VMThread *vmThread)
 	}
 
 	return ownableSynchronizerObjectLists;
+}
+
+bool
+MM_GCExtensions::checkAndVerifyOwnableSynchronizerObjectList(MM_EnvironmentBase *envMaster)
+{
+	//uint64_t startTime, duration;
+	//OMRPORT_ACCESS_FROM_OMRPORT(envMaster->getPortLibrary());
+	//startTime = omrtime_hires_clock();
+
+	uintptr_t numberObjects = 0;
+
+	J9VMThread *vmThread = (J9VMThread *)envMaster->getLanguageVMThread();
+	MM_ObjectAccessBarrier *barrier = accessBarrier;
+
+	GC_VMThreadListIterator scavengeThreadListIterator(vmThread);
+	J9VMThread *walkThread = NULL;
+	while ((walkThread = scavengeThreadListIterator.nextVMThread()) != NULL) {
+		if(walkThread->omrVMThread != NULL) {
+			MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(walkThread->omrVMThread);
+			if ( env != NULL ) {
+
+					//Check if the threads buffer flushed
+					Assert_MM_true(env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->isFlushed());
+
+			}
+		}
+	}
+
+	MM_OwnableSynchronizerObjectList* ownableSynchronizerObjectListItr = ownableSynchronizerObjectLists;
+	while(NULL != ownableSynchronizerObjectListItr) {
+		J9Object *objectPtr = ownableSynchronizerObjectListItr->getHeadOfList();
+
+		while (NULL != objectPtr) {
+			numberObjects++;
+			Assert_MM_true(countInList(envMaster, objectPtr) == 1);
+			objectPtr = barrier->getOwnableSynchronizerLink(objectPtr);
+		}
+		ownableSynchronizerObjectListItr = ownableSynchronizerObjectListItr->getNextList();
+	}
+
+	//duration = omrtime_hires_clock() - startTime;
+
+	//omrtty_printf("Check & Verify Ownable Objects: %u \n", numberObjects);
+
+	return true;
+}
+
+uintptr_t
+MM_GCExtensions::countInList(MM_EnvironmentBase *env, J9Object *objectPtr_to_check) {
+	uintptr_t countInList = 0;
+
+	//OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+
+	MM_ObjectAccessBarrier *barrier = accessBarrier;
+
+	MM_OwnableSynchronizerObjectList* ownableSynchronizerObjectListItr = ownableSynchronizerObjectLists;
+	while(NULL != ownableSynchronizerObjectListItr) {
+		J9Object *objectPtr = ownableSynchronizerObjectListItr->getHeadOfList();
+		while (NULL != objectPtr) {
+			if (objectPtr_to_check == objectPtr) {
+				countInList++;
+
+				if (countInList > 1)
+					return countInList;
+			}
+			objectPtr = barrier->getOwnableSynchronizerLink(objectPtr);
+		}
+		ownableSynchronizerObjectListItr = ownableSynchronizerObjectListItr->getNextList();
+	}
+
+	return countInList;
 }

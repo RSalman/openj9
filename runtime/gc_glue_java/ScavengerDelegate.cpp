@@ -610,6 +610,10 @@ MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentS
 		/* this method expects the caller (scanObject) never pass the same object twice, which could cause circular loop when walk through the list.
 		 * the assertion partially could detect duplication case */
 		Assert_MM_false(_extensions->scavenger->isObjectInNewSpace(link));
+
+//		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+//		omrtty_printf("\t [%u] BUFFER ADD: private_addOwnableSynchronizerObjectInList [%p]\n", env->getSlaveID(), object);
+
 		env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, object);
 		env->getGCEnvironment()->_scavengerJavaStats._ownableSynchronizerTotalSurvived += 1;
 		if (_extensions->scavenger->isObjectInNewSpace(object)) {

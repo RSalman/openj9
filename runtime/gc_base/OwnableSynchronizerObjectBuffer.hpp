@@ -1,4 +1,3 @@
-
 /*******************************************************************************
  * Copyright (c) 1991, 2014 IBM Corp. and others
  *
@@ -89,6 +88,8 @@ public:
 	 * @param maxObjectCount the maximum number of objects permitted before a forced flush 
 	 */
 	MM_OwnableSynchronizerObjectBuffer(MM_GCExtensions *extensions, UDATA maxObjectCount);
+	
+	bool isFlushed();
 };
 
 #endif /* OWNABLESYNCHRONIZEROBJECTBUFFER_HPP_ */
