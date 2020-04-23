@@ -319,7 +319,10 @@ MM_GCExtensions::checkAndVerifyOwnableSynchronizerObjectList(MM_EnvironmentBase 
 			uintptr_t listCount = countInList(envMaster, objectPtr);
 
 			if (listCount != 1) {
-				omrtty_printf("***** [%p] DUPLICATE ***** \n", objectPtr);
+				if(dp) {
+					omrfilestream_printf(_pf, "***** [%p] DUPLICATE ***** \n", objectPtr);
+				}
+
 				Assert_MM_true(listCount == 1);
 			}
 

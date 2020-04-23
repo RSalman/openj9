@@ -804,6 +804,12 @@ gcParseXXgcArguments(J9JavaVM *vm, char *optArg)
 			continue ;
 		}
 
+		if(try_scan(&scan_start, "debugOwnable")) {
+			extensions->dp = true;
+			extensions->initOwnableDebug();
+			continue;
+		}
+
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		if (try_scan(&scan_start, "debugConcurrentScavengerPageAlignment")) {
 			extensions->setDebugConcurrentScavengerPageAlignment(true);

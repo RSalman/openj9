@@ -100,11 +100,10 @@ MM_OwnableSynchronizerObjectBuffer::add(MM_EnvironmentBase* env, j9object_t obje
 
 		uintptr_t listCount = _extensions->countInList(env, objectToAdd);
 		_objectCount += 1;
-		omrtty_printf("Buffer Add: [%i] %s -> %p [REGION: %p-%p] [count: %u]\n", env->getSlaveID(), ID, object, _region->getLowAddress(), _region->getHighAddress(), _objectCount);
+		if(_extensions->dp) {omrfilestream_printf(_extensions->_pf, "Buffer Add: [%i] %s -> %p [REGION: %p-%p] [count: %u]\n", env->getSlaveID(), ID, object, _region->getLowAddress(), _region->getHighAddress(), _objectCount);}
 
 		if (listCount != 0) {
-			OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
-			omrtty_printf("*** %p was already in the list **** \n", object);
+			if(_extensions->dp) {omrfilestream_printf(_extensions->_pf,"*** %p was already in the list **** \n", object);}
 			Assert_MM_true(listCount == 0);
 		}
 
@@ -133,9 +132,9 @@ MM_OwnableSynchronizerObjectBuffer::add(MM_EnvironmentBase* env, j9object_t obje
 
 		J9Object *objectToAdd = object;
 		uintptr_t listCount = _extensions->countInList(env, objectToAdd);
-		omrtty_printf("Buffer Add: [%i] %s -> %p [REGION: %p-%p] [count: %u]\n", env->getSlaveID(), ID, object, _region->getLowAddress(), _region->getHighAddress(), _objectCount);
+		if(_extensions->dp) {omrfilestream_printf(_extensions->_pf,"Buffer Add: [%i] %s -> %p [REGION: %p-%p] [count: %u]\n", env->getSlaveID(), ID, object, _region->getLowAddress(), _region->getHighAddress(), _objectCount);}
 		if (listCount != 0) {
-			omrtty_printf("*** %p was already in the list **** \n", object);
+			if(_extensions->dp) {omrfilestream_printf(_extensions->_pf,"*** %p was already in the list **** \n", object);}
 			Assert_MM_true(listCount == 0);
 		}
 	}
