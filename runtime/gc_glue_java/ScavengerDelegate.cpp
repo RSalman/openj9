@@ -601,6 +601,9 @@ MM_ScavengerDelegate::fixupDestroyedSlot(MM_EnvironmentBase *env, MM_ForwardedHe
 void
 MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentStandard *env, omrobjectptr_t object)
 {
+
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+
 	omrobjectptr_t link = MM_GCExtensions::getExtensions(_extensions)->accessBarrier->isObjectInOwnableSynchronizerList(object);
 	/* if isObjectInOwnableSynchronizerList() return NULL, it means the object isn't in OwnableSynchronizerList,
 	 * it could be the constructing object which would be added in the list after the construction finish later. ignore the object to avoid duplicated reference in the list.
@@ -612,6 +615,10 @@ MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentS
 		Assert_MM_false(_extensions->scavenger->isObjectInNewSpace(link));
 
 		const char* ID;
+
+		if(_extensions->dp) {
+			omrfilestream_printf(_extensions->_pf, "[%i] MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList [object: %p] [Link: %p] \n", env->getSlaveID(), object, link);
+		}
 
 		if (_extensions->scavenger->isConcurrentCycleInProgress() && _extensions->scavenger->isCurrentPhaseConcurrent()) {
 			ID = "ScavengerAddOwnable [isConcurrentCycleInProgress & isCurrentPhaseConcurrent]";
@@ -628,6 +635,14 @@ MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentS
 		env->getGCEnvironment()->_scavengerJavaStats._ownableSynchronizerTotalSurvived += 1;
 		if (_extensions->scavenger->isObjectInNewSpace(object)) {
 			env->getGCEnvironment()->_scavengerJavaStats._ownableSynchronizerNurserySurvived += 1;
+		}
+	} else if (NULL == link) {
+		if(_extensions->dp) {
+				omrfilestream_printf(_extensions->_pf, "[%i] MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList LINK == NULL [object: %p] \n", env->getSlaveID(), object);
+		} 
+	} else if (_extensions->scavenger->isObjectInNewSpace(link)) {
+		if(_extensions->dp) {
+				omrfilestream_printf(_extensions->_pf, "[%i] MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList LINK IN NEW SPACE [object: %p] [Link: %p] \n", env->getSlaveID(), object, link);
 		}
 	}
 }
