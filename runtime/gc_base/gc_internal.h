@@ -189,6 +189,7 @@ extern J9_CFUNC j9object_t J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J
 extern J9_CFUNC void memoryManagerAsyncCallbackHandler(J9VMThread *vmThread, IDATA handlerKey, void *userData);
 extern J9_CFUNC UDATA j9gc_get_overflow_safe_alloc_size(J9JavaVM *javaVM);
 extern J9_CFUNC IDATA j9gc_objaccess_mixedObjectReadI32(J9VMThread *vmThread, j9object_t srcObject, UDATA offset, UDATA isVolatile);
+extern J9_CFUNC void J9DebugOwnableAllocated(J9VMThread *vmContext, J9Class *clazz, j9object_t instance, const char* source);
 extern J9_CFUNC j9object_t J9AllocateObject(J9VMThread *vmContext, J9Class *clazz, UDATA allocateFlags);
 extern J9_CFUNC UDATA j9gc_ext_is_marked(J9JavaVM *javaVM, j9object_t objectPtr);
 extern J9_CFUNC void J9MetronomeWriteBarrierStore(J9VMThread *vmThread, J9Object *dstObject, fj9object_t *dstAddress, J9Object *srcObject);

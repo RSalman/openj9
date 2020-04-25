@@ -3885,6 +3885,7 @@ typedef struct J9InternalVMLabels {
 
 typedef struct J9MemoryManagerFunctions {
 	j9object_t  ( *J9AllocateIndexableObject)(struct J9VMThread *vmContext, J9Class *clazz, U_32 size, UDATA allocateFlags) ;
+	void  ( *J9DebugOwnableAllocated)(struct J9VMThread *vmContext, J9Class *clazz, j9object_t instance, const char* source) ;
 	j9object_t  ( *J9AllocateObject)(struct J9VMThread *vmContext, J9Class *clazz, UDATA allocateFlags) ;
 	j9object_t  ( *J9AllocateIndexableObjectNoGC)(struct J9VMThread *vmThread, J9Class *clazz, U_32 numberIndexedFields, UDATA allocateFlags) ;
 	j9object_t  ( *J9AllocateObjectNoGC)(struct J9VMThread *vmThread, J9Class *clazz, UDATA allocateFlags) ;

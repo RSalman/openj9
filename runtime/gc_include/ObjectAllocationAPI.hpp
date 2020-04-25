@@ -355,6 +355,8 @@ public:
 			VM_AtomicSupport::writeBarrier();
 		}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP || J9VM_GC_SEGREGATED_HEAP */
+	
+		currentThread->javaVM->memoryManagerFunctions->J9DebugOwnableAllocated(currentThread, clazz, instance, "inlineAllocateObject");
 		return instance;
 	}
 

@@ -26,6 +26,7 @@
 
 J9MemoryManagerFunctions MemoryManagerFunctions = {
 	J9AllocateIndexableObject,
+	J9DebugOwnableAllocated,
 	J9AllocateObject,
 	J9AllocateIndexableObjectNoGC,
 	J9AllocateObjectNoGC,

@@ -85,6 +85,8 @@ J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFla
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
 
+	J9DebugOwnableAllocated(vmThread, clazz, NULL, "J9AllocateObjectNoGC");
+
 #if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
 	if (extensions->instrumentableAllocateHookEnabled || !env->isInlineTLHAllocateEnabled()) {
@@ -322,6 +324,8 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 		MM_IndexableObjectAllocationModel indexableOAM(env, clazz, numberOfIndexedFields, allocateFlags);
 		if (indexableOAM.initializeAllocateDescription(env)) {
 			env->_isInNoGCAllocationCall = true;
+		J9DebugOwnableAllocated(vmThread, clazz, NULL, "J9AllocateIndexableObjectNoGC");
+
 			objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &indexableOAM);
 			if (NULL != objectPtr) {
 				uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
@@ -343,6 +347,28 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 	return objectPtr;
 }
 
+void
+J9DebugOwnableAllocated(J9VMThread *vmThread, J9Class *clazz, j9object_t instance, const char* source)
+{
+	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	MM_GCExtensionsBase *extensions = env->getExtensions();
+
+	if(extensions->dp) {
+		J9UTF8* currentClassName = J9ROMCLASS_CLASSNAME(clazz->romClass);
+		bool noFair = J9UTF8_LITERAL_EQUALS(J9UTF8_DATA(currentClassName), J9UTF8_LENGTH(currentClassName), "java/util/concurrent/locks/ReentrantLock$NonfairSync");
+		bool fair = J9UTF8_LITERAL_EQUALS(J9UTF8_DATA(currentClassName), J9UTF8_LENGTH(currentClassName), "java/util/concurrent/locks/ReentrantReadWriteLock$FairSync");
+
+		if(noFair || fair) {
+			OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+			if(instance) {
+				omrfilestream_printf(extensions->_pf, "*** AllocateObject [%p] [%s]: [%.*s] *** \n", instance, source, currentClassName->length, currentClassName->data);
+			} else {
+				omrfilestream_printf(extensions->_pf, "*** AllocateObject [NULL] [%s] [%.*s] *** \n", source, currentClassName->length, currentClassName->data);
+			}
+		}
+	}
+}
+
 /**
  * High level allocate routine (used by VM) to allocate a single object
  * @param clazz the class of the object to be allocated
@@ -356,6 +382,8 @@ J9Object *
 J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	
+	J9DebugOwnableAllocated(vmThread, clazz, NULL, "J9AllocateObject Start");
 
 #if defined(J9VM_GC_THREAD_LOCAL_HEAP)	
 	if (!env->isInlineTLHAllocateEnabled()) {
@@ -483,6 +511,8 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 	}	
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
 
+	J9DebugOwnableAllocated(vmThread, clazz, objectPtr, "J9AllocateObject End");
+
 	return objectPtr;
 }
 
@@ -519,6 +549,7 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 	uintptr_t sizeInBytesRequired = 0;
 	MM_IndexableObjectAllocationModel indexableOAM(env, clazz, numberOfIndexedFields, allocateFlags);
 	if (indexableOAM.initializeAllocateDescription(env)) {
+	J9DebugOwnableAllocated(vmThread, clazz, NULL, "J9AllocateIndexableObject");
 		objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &indexableOAM);
 		if (NULL != objectPtr) {
 			uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
