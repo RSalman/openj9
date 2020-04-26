@@ -358,6 +358,18 @@ MM_ScavengerDelegate::getObjectScanner(MM_EnvironmentStandard *env, omrobjectptr
 		if (GC_ObjectScanner::isHeapScan(flags)) {
 			private_addOwnableSynchronizerObjectInList(env, objectPtr);
 		}
+			else {
+			if(_extensions->dp) {
+				OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+					J9UTF8* currentClassName = J9ROMCLASS_CLASSNAME(clazzPtr->romClass);
+					bool noFair = J9UTF8_LITERAL_EQUALS(J9UTF8_DATA(currentClassName), J9UTF8_LENGTH(currentClassName), "java/util/concurrent/locks/ReentrantLock$NonfairSync");
+					bool fair = J9UTF8_LITERAL_EQUALS(J9UTF8_DATA(currentClassName), J9UTF8_LENGTH(currentClassName), "java/util/concurrent/locks/ReentrantReadWriteLock$FairSync");
+
+					if(noFair || fair) {
+						omrfilestream_printf(_extensions->_pf, "*** GC_ObjectModel::SCAN_OWNABLESYNCHRONIZER_OBJECT SKIP ADD [%p] [%.*s] *** \n", objectPtr, currentClassName->length, currentClassName->data);
+					}
+				}
+		}
 		objectScanner = GC_MixedObjectScanner::newInstance(env, objectPtr, allocSpace, flags);
 		break;
 	case GC_ObjectModel::SCAN_POINTER_ARRAY_OBJECT:
