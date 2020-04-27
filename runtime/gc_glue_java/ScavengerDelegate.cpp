@@ -632,13 +632,16 @@ MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentS
 			omrfilestream_printf(_extensions->_pf, "[%i] MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList [object: %p] [Link: %p] \n", env->getSlaveID(), object, link);
 		}
 
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		if (_extensions->scavenger->isConcurrentCycleInProgress() && _extensions->scavenger->isCurrentPhaseConcurrent()) {
 			ID = "ScavengerAddOwnable [isConcurrentCycleInProgress & isCurrentPhaseConcurrent]";
 		} else if (_extensions->scavenger->isConcurrentCycleInProgress()) {
 			ID = "ScavengerAddOwnable [isConcurrentCycleInProgress]";
 		} else if (_extensions->scavenger->isCurrentPhaseConcurrent()) {
 			ID = "ScavengerAddOwnable [isCurrentPhaseConcurrent]";
-		} else {
+		} else
+#endif /* OMR_GC_CONCURRENT_SCAVENGER */
+		{
 			ID = "ScavengerAddOwnable";
 		}
 
