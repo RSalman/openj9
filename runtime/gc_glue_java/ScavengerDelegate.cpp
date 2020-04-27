@@ -621,10 +621,10 @@ MM_ScavengerDelegate::private_addOwnableSynchronizerObjectInList(MM_EnvironmentS
 	 * it could be the constructing object which would be added in the list after the construction finish later. ignore the object to avoid duplicated reference in the list.
 	 * For concurrent scavenger, an object that doesn't finish constructing before the start of the STW phase will be added to the list after, during the concurrent phase.
 	 * In this case, the object may already be added to the list. */
-	if (NULL != link && (!_extensions->isConcurrentScavengerEnabled() || (_extensions->isConcurrentScavengerEnabled() && !_extensions->scavenger->isObjectInNewSpace(link)))) {
+	if (NULL != link && (!_extensions->isConcurrentScavengerEnabled() || (_extensions->isConcurrentScavengerEnabled() && _extensions->scavenger->isObjectInEvacuateMemory(link)))) {
 		/* this method expects the caller (scanObject) never pass the same object twice, which could cause circular loop when walk through the list.
 		 * the assertion partially could detect duplication case */
-		Assert_MM_false(_extensions->scavenger->isObjectInNewSpace(link));
+		Assert_MM_true(_extensions->scavenger->isObjectInEvacuateMemory(link));
 
 		const char* ID;
 
