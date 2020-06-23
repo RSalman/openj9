@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 1991, 2020 IBM Corp. and others
- *
+ * 
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
  * distribution and is available at https://www.eclipse.org/legal/epl-2.0/
@@ -802,6 +802,18 @@ gcParseXXgcArguments(J9JavaVM *vm, char *optArg)
 			extensions->aliasInhibitingThresholdPercentage = ((double)percentage) / 100.0;
 
 			continue ;
+		}
+
+		if (try_scan(&scan_start, "hybridThread=")) {
+				UDATA count = 0;
+				if(!scan_udata_helper(vm, &scan_start, &count, "hybridThread=")) {
+					returnValue = JNI_EINVAL;
+					break;
+				}
+
+				extensions->dispatcherHybridNotifyThreadBound = count;
+
+				continue ;
 		}
 
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
