@@ -89,6 +89,8 @@ public:
 		 * this again.
 		 */
 		/*((MM_SegregatedAllocationInterface *)walkThreadEnv->_objectAllocationInterface)->preMarkCache(walkThreadEnv);*/
+		
+		/* <TAG> Are we flushing like this after scanning on ConcurrentGC side */
 		walkThreadEnv->_objectAllocationInterface->flushCache(walkThreadEnv);
 		/* Disable the double barrier on the scanned thread. */
 		_realtimeGC->disableDoubleBarrierOnThread(env, walkThread->omrVMThread);

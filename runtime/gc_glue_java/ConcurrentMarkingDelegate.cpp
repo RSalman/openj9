@@ -76,6 +76,7 @@ MM_ConcurrentMarkingDelegate::initialize(MM_EnvironmentBase *env, MM_ConcurrentG
 void
 MM_ConcurrentMarkingDelegate::signalThreadsToTraceStacks(MM_EnvironmentBase *env)
 {
+	//How does this end up "scanThreads()" ?
 	uintptr_t threadCount = 0;
 
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);

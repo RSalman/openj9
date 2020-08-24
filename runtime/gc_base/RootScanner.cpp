@@ -510,7 +510,7 @@ MM_RootScanner::scanThreads(MM_EnvironmentBase *env)
 bool
 MM_RootScanner::scanOneThread(MM_EnvironmentBase *env, J9VMThread* walkThread, void* localData)
 {
-	GC_VMThreadIterator vmThreadIterator(walkThread);
+	GC_VMThreadIterator vmThreadIterator(walkThread);s
 
 	while(J9Object **slot = vmThreadIterator.nextSlot()) {
 		doVMThreadSlot(slot, &vmThreadIterator);

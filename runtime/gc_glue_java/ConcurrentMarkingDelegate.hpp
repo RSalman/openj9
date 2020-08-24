@@ -310,6 +310,7 @@ public:
 		*bytesTraced = 0;
 		*collectedRoots = false;
 		bool started = false;
+		<TAG> Dynamic calss unloading similar to metrome, it's done before there.
 #if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
 		if (_scanClassesMode.switchScanClassesMode(MM_ScanClassesMode::SCAN_CLASSES_NEED_TO_BE_EXECUTED, MM_ScanClassesMode::SCAN_CLASSES_CURRENTLY_ACTIVE)) {	/* currently not running */
 			*bytesTraced = concurrentClassMark(env, collectedRoots);

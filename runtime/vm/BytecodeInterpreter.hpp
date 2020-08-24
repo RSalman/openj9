@@ -6700,7 +6700,7 @@ resolve:
 					VM_ValueTypeHelpers::putFlattenableField(_currentThread, _objectAccessBarrier, ramFieldRef, objectref, *(j9object_t*)_sp);
 				} else
 #endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
-				{
+				{ //HERE
 					_objectAccessBarrier.inlineMixedObjectStoreObject(_currentThread, objectref, newValueOffset, *(j9object_t*)_sp, isVolatile);
 				}
 				_sp += 2;

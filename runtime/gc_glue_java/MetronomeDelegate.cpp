@@ -1461,7 +1461,7 @@ MM_MetronomeDelegate::markLiveObjectsRoots(MM_EnvironmentRealtime *env)
 	rootMarker.scanThreads(env);
 
 	if (env->_currentTask->synchronizeGCThreadsAndReleaseMain(env, UNIQUE_ID)) {
-		_extensions->newThreadAllocationColor = GC_MARK;
+		_extensions->newThreadAllocationColor = GC_MARK; //Allocation color
 		_realtimeGC->disableDoubleBarrier(env);
 		if (_realtimeGC->verbose(env) >= 3) {
 			rootMarker.reportThreadCount(env);

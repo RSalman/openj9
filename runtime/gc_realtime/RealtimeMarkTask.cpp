@@ -36,8 +36,8 @@
 void
 MM_RealtimeMarkTask::run(MM_EnvironmentBase *env)
 {
-	_markingScheme->markLiveObjectsInit(env, false);
-	_markingScheme->markLiveObjectsRoots(env);
+	_markingScheme->markLiveObjectsInit(env, false); //Enable write barrier && Enable double barrier
+	_markingScheme->markLiveObjectsRoots(env); //Double barrier disabled && allocation color changed
 	_markingScheme->markLiveObjectsScan(env);
 	_markingScheme->markLiveObjectsComplete(env);
 }

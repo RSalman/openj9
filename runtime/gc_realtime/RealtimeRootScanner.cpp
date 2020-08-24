@@ -91,7 +91,7 @@ MM_RealtimeRootScanner::scanClassesComplete(MM_EnvironmentBase *env)
  */
 void
 MM_RealtimeRootScanner::scanThreads(MM_EnvironmentBase *env)
-{
+{ //scan Thread == scanThreadRoots
 	reportScanningStarted(RootScannerEntity_Threads);
 
 	GC_VMThreadListIterator vmThreadListIterator(static_cast<J9JavaVM*>(_omrVM->_language_vm));
