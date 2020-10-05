@@ -39,6 +39,10 @@
 #include "omrmodroncore.h"
 #include "omr.h"
 
+#if defined(OMR_GC_SATB_M1_STRICT)
+#include <assert.h>
+#endif /* OMR_GC_SATB_M1_STRICT */
+
 #include "AtomicSupport.hpp"
 #include "ArrayCopyHelpers.hpp"
 #include "j9nongenerated.h"
@@ -103,6 +107,9 @@ public:
 	static VMINLINE void
 	internalPostBatchStoreObjectCardTableAndGenerational(J9VMThread *vmThread, j9object_t object)
 	{
+#if defined(OMR_GC_SATB_M1_STRICT)
+		assert(0);
+#endif /* OMR_GC_SATB_M1_STRICT */
 		/* Check to see if object is old.  If object is not old neither barrier is required
 		 * if ((object - vmThread->omrVMThread->heapBaseForBarrierRange0) < vmThread->omrVMThread->heapSizeForBarrierRange0) then old
 		 *
@@ -160,6 +167,9 @@ public:
 	static VMINLINE void
 	internalPostBatchStoreObjectCardTable(J9VMThread *vmThread, j9object_t object)
 	{
+#if defined(OMR_GC_SATB_M1_STRICT)
+		assert(0);
+#endif /* OMR_GC_SATB_M1_STRICT */
 		/* Check to see if object is old.  If object is not old neither barrier is required
 		 * if ((object - vmThread->omrVMThread->heapBaseForBarrierRange0) < vmThread->omrVMThread->heapSizeForBarrierRange0) then old
 		 *
@@ -188,6 +198,9 @@ public:
 	static VMINLINE void
 	internalPostObjectStoreCardTableAndGenerational(J9VMThread *vmThread, j9object_t object, j9object_t value)
 	{
+#if defined(OMR_GC_SATB_M1_STRICT)
+		assert(0);
+#endif /* OMR_GC_SATB_M1_STRICT */
 		/* if value is NULL neither barrier is required */
 		if (NULL != value) {
 			/* Check to see if object is old.  If object is not old neither barrier is required
@@ -227,6 +240,9 @@ public:
 	static VMINLINE void
 	internalPostObjectStoreCardTable(J9VMThread *vmThread, j9object_t object, j9object_t value)
 	{
+#if defined(OMR_GC_SATB_M1_STRICT)
+		assert(0);
+#endif /* OMR_GC_SATB_M1_STRICT */
 		/* if value is NULL neither barrier is required */
 		if (NULL != value) {
 			/* Check to see if object is old.
@@ -2753,7 +2769,7 @@ private:
 			} else {
 				j9object_t oldObject = readObjectImpl(vmThread, destAddress, false);
 				if (NULL != oldObject) {
-					if (!isMarked(vmThread, oldObject)) {
+					if (!vmThread->javaVM->memoryManagerFunctions->j9gc_ext_is_marked(vmThread->javaVM, oldObject)) { /* Should use !isMarked(vmThread, oldObject) */
 						vmThread->javaVM->memoryManagerFunctions->J9MetronomeWriteBarrierStore(vmThread, object, destAddress, value);
 					}
 				}
@@ -2784,7 +2800,7 @@ private:
 			} else {
 				j9object_t oldObject = *destAddress;
 				if (NULL != oldObject) {
-					if (!isMarked(vmThread, oldObject)) {
+					if (!vmThread->javaVM->memoryManagerFunctions->j9gc_ext_is_marked(vmThread->javaVM, oldObject)) { /* Should use !isMarked(vmThread, oldObject) */
 						vmThread->javaVM->memoryManagerFunctions->J9MetronomeWriteBarrierJ9ClassStore(vmThread, object, destAddress, value);
 					}
 				}

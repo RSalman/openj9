@@ -50,6 +50,7 @@
 #include "ObjectAllocationInterface.hpp"
 #include "ObjectModel.hpp"
 #include "ObjectMonitor.hpp"
+#include "Configuration.hpp"
 #if defined (J9VM_GC_REALTIME)
 #include "Scheduler.hpp"
 #endif /* J9VM_GC_REALTIME */
@@ -62,6 +63,7 @@ static void dumpStackFrames(J9VMThread *currentThread);
 static void traceAllocateIndexableObject(J9VMThread *vmThread, J9Class* clazz, uintptr_t objSize, uintptr_t numberOfIndexedFields);
 static J9Object * traceAllocateObject(J9VMThread *vmThread, J9Object * object, J9Class* clazz, uintptr_t objSize, uintptr_t numberOfIndexedFields=0);
 static bool traceObjectCheck(J9VMThread *vmThread, bool *shouldTriggerAllocationSampling = NULL);
+static void checkColorAndMark(MM_EnvironmentBase *env, J9Object *objectPtr);
 
 #define STACK_FRAMES_TO_DUMP	8
 
@@ -84,9 +86,8 @@ J9Object *
 J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
-
-#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
+#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	if (extensions->instrumentableAllocateHookEnabled || !env->isInlineTLHAllocateEnabled()) {
 		/* This function is restricted to only being used for instrumentable allocates so we only need to check that one allocation hook.
 		 * Note that we can't handle hooked allocates since we might be called without a JIT resolve frame and that is required for us to
@@ -126,6 +127,10 @@ J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFla
 
 	if ((NULL != objectPtr) && J9_ARE_ALL_BITS_SET(clazz->classFlags, J9ClassContainsUnflattenedFlattenables)) {
 		vmThread->javaVM->internalVMFunctions->defaultValueWithUnflattenedFlattenables(vmThread, clazz, objectPtr);
+	}
+
+	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled() && objectPtr != NULL) {
+		checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -304,6 +309,17 @@ traceObjectCheck(J9VMThread *vmThread, bool *shouldTriggerAllocationSampling)
 	return false;
 }
 
+static void
+checkColorAndMark(MM_EnvironmentBase *env, J9Object *objectPtr)
+{
+	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
+
+	Assert_MM_true(objectPtr != NULL);
+	if (GC_MARK == env->getAllocationColor()) {
+		((MM_ParallelGlobalGC *)extensions->getGlobalCollector())->getMarkingScheme()->markObject(env, objectPtr, true);
+	}
+}
+
 /**
  * High level fast path allocate routine (used by VM and JIT) to allocate an indexable object.  This method does not need to be called with
  * a resolve frame as it cannot cause a GC.  If the attempt at allocation fails, the method will return null and it is the caller's 
@@ -324,9 +340,9 @@ J9Object *
 J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t numberOfIndexedFields, uintptr_t allocateFlags)
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
-	
-#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
+		
+#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	if (extensions->instrumentableAllocateHookEnabled || !env->isInlineTLHAllocateEnabled()) {
 		/* This function is restricted to only being used for instrumentable allocates so we only need to check that one allocation hook.
 		 * Note that we can't handle hooked allocates since we might be called without a JIT resolve frame and that is required for us to
@@ -365,6 +381,10 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 		for (UDATA index = 0; index < numberOfIndexedFields; index++) {
 			objectAccessBarrier.inlineIndexableObjectStoreObject(vmThread, objectPtr, index, defaultValue);
 		}
+	}
+
+	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled() && objectPtr != NULL) {
+		checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -510,6 +530,10 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 	}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
 
+	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
+		checkColorAndMark(env, objectPtr);
+	}
+
 	return objectPtr;
 }
 
@@ -649,6 +673,10 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 	}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
 
+	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
+		checkColorAndMark(env, objectPtr);
+	}
+	
 	return objectPtr;
 }
 

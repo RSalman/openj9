@@ -141,15 +141,27 @@ MM_MarkingDelegate::workerSetupForGC(MM_EnvironmentBase *env)
 }
 
 void
-MM_MarkingDelegate::workerCompleteGC(MM_EnvironmentBase *env)
+MM_MarkingDelegate::workerCompleteGC(MM_EnvironmentBase *env, bool concurrentSATB)
 {
 	/* ensure that all buffers have been flushed before we start reference processing */
 	GC_Environment *gcEnv = env->getGCEnvironment();
 	gcEnv->_referenceObjectBuffer->flush(env);
 
 	if (env->_currentTask->synchronizeGCThreadsAndReleaseSingleThread(env, UNIQUE_ID)) {
+
+		/* This is redundant for incremental. SATB won't ever get a chance to set soft as weak otherwise. */
+		if (env->_cycleState->_gcCode.isOutOfMemoryGC()) {
+			env->_cycleState->_referenceObjectOptions |= MM_CycleState::references_soft_as_weak;
+		}
+		
 		env->_cycleState->_referenceObjectOptions |= MM_CycleState::references_clear_soft;
 		env->_cycleState->_referenceObjectOptions |= MM_CycleState::references_clear_weak;
+
+		/* Unfinalized object and ownable synchronizer processing done at this Point for SATB.
+		 * This is done in final STW as part of Roots for incremental, however allocation can be followed by roots for SATB*/
+		if (concurrentSATB) {
+			processUnfinalizedAndOwnableLists(env);
+		}
 		env->_currentTask->releaseSynchronizedGCThreads(env);
 	}
 	MM_MarkingSchemeRootClearer rootClearer(env, _markingScheme, this);
@@ -192,31 +204,18 @@ MM_MarkingDelegate::mainCleanupAfterGC(MM_EnvironmentBase *env)
 }
 
 void
-MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env)
+MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env, bool concurrentSATB)
 {
-	/* Start unfinalized object and ownable synchronizer processing */
-	if (J9MODRON_HANDLE_NEXT_WORK_UNIT(env)) {
+	if (concurrentSATB) {
 		_shouldScanUnfinalizedObjects = false;
 		_shouldScanOwnableSynchronizerObjects = false;
-		MM_HeapRegionDescriptorStandard *region = NULL;
-		GC_HeapRegionIteratorStandard regionIterator(_extensions->heap->getHeapRegionManager());
-		while (NULL != (region = regionIterator.nextRegion())) {
-			MM_HeapRegionDescriptorStandardExtension *regionExtension = MM_ConfigurationDelegate::getHeapRegionDescriptorStandardExtension(env, region);
-			for (UDATA i = 0; i < regionExtension->_maxListIndex; i++) {
-				/* Start unfinalized object processing for region */
-				MM_UnfinalizedObjectList *unfinalizedObjectList = &(regionExtension->_unfinalizedObjectLists[i]);
-				unfinalizedObjectList->startUnfinalizedProcessing();
-				if (!unfinalizedObjectList->wasEmpty()) {
-					_shouldScanUnfinalizedObjects = true;
-				}
-				/* Start ownable synchronizer processing for region */
-				MM_OwnableSynchronizerObjectList *ownableSynchronizerObjectList = &(regionExtension->_ownableSynchronizerObjectLists[i]);
-				ownableSynchronizerObjectList->startOwnableSynchronizerProcessing();
-				if (!ownableSynchronizerObjectList->wasEmpty()) {
-					_shouldScanOwnableSynchronizerObjects = true;
-				}
-			}
-		}
+	}
+	
+	/* Start unfinalized object and ownable synchronizer processing */
+	if (!concurrentSATB && J9MODRON_HANDLE_NEXT_WORK_UNIT(env)) {
+		_shouldScanUnfinalizedObjects = false;
+		_shouldScanOwnableSynchronizerObjects = false;
+		processUnfinalizedAndOwnableLists(env);
 	}
 
 	/* Reset MM_RootScanner base class for scanning */
@@ -227,6 +226,11 @@ MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env)
 	/* Mark root set classes */
 	rootMarker.setClassDataAsRoots(!isDynamicClassUnloadingEnabled());
 	if (isDynamicClassUnloadingEnabled()) {
+#if defined(OMR_GC_SATB_M1_STRICT)	
+		if (concurrentSATB) {
+			Assert_MM_unreachable();
+		}
+#endif /* OMR_GC_SATB_M1_STRICT */
 		/* Setting the permanent class loaders to scanned without a locked operation is safe
 		 * Class loaders will not be rescanned until a thread synchronize is executed
 		 */
@@ -244,6 +248,37 @@ MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env)
 
 	/* Scan roots */
 	rootMarker.scanRoots(env);
+}
+
+void
+MM_MarkingDelegate::processUnfinalizedAndOwnableLists(MM_EnvironmentBase *env)
+{
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+	MM_HeapRegionDescriptorStandard *region = NULL;
+	GC_HeapRegionIteratorStandard regionIterator(_extensions->heap->getHeapRegionManager());
+	while (NULL != (region = regionIterator.nextRegion())) {
+		MM_HeapRegionDescriptorStandardExtension *regionExtension = MM_ConfigurationDelegate::getHeapRegionDescriptorStandardExtension(env, region);
+		for (UDATA i = 0; i < regionExtension->_maxListIndex; i++) {
+			/* Start unfinalized object processing for region */
+			MM_UnfinalizedObjectList *unfinalizedObjectList = &(regionExtension->_unfinalizedObjectLists[i]);
+			unfinalizedObjectList->startUnfinalizedProcessing();
+			if (!unfinalizedObjectList->wasEmpty()) {
+				if (_extensions->debugSATBlevel >= 3)  {
+					omrtty_printf("-- [processUnfinalizedAndOwnableLists] _shouldScanUnfinalizedObjects = TRUE;  --\n");
+				}
+				_shouldScanUnfinalizedObjects = true;
+			}
+			/* Start ownable synchronizer processing for region */
+			MM_OwnableSynchronizerObjectList *ownableSynchronizerObjectList = &(regionExtension->_ownableSynchronizerObjectLists[i]);
+			ownableSynchronizerObjectList->startOwnableSynchronizerProcessing();
+			if (!ownableSynchronizerObjectList->wasEmpty()) {
+				if (_extensions->debugSATBlevel >= 3)  {
+					omrtty_printf("-- [processUnfinalizedAndOwnableLists] _shouldScanOwnableSynchronizerObjects = TRUE;  --\n");
+				}
+				_shouldScanOwnableSynchronizerObjects = true;
+			}
+		}
+	}
 }
 
 void

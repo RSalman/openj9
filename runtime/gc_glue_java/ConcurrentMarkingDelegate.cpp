@@ -33,6 +33,7 @@
 #include "StackSlotValidator.hpp"
 #include "VMInterface.hpp"
 #include "VMThreadListIterator.hpp"
+#include "Configuration.hpp"
 
 /**
  * Concurrents stack slot iterator.
@@ -101,8 +102,19 @@ MM_ConcurrentMarkingDelegate::signalThreadsToActivateWriteBarrier(MM_Environment
 
 	J9VMThread *walkThread;
 	GC_VMThreadListIterator vmThreadListIterator(_javaVM);
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	while ((walkThread = vmThreadListIterator.nextVMThread()) != NULL) {
+		MM_EnvironmentBase *walkEnv = MM_EnvironmentBase::getEnvironment(walkThread->omrVMThread);
 		walkThread->privateFlags |= J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+		if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
+			if (extensions->debugSATBlevel >= 2) {
+				omrtty_printf("** [SATB] [signalThreadsToActivateWriteBarrier] %i[%p] ** \n", walkEnv->getWorkerID(), walkEnv);
+			}
+			walkEnv->setAllocationColor(GC_MARK);
+			walkEnv->setThreadScanned(true);
+			Assert_MM_true(walkEnv->getGCEnvironment()->_referenceObjectBuffer->isEmpty());
+			_collector->flushLocalBuffers(walkEnv);
+		}
 	}
 	GC_VMInterface::unlockVMThreadList(extensions);
 }
@@ -115,10 +127,18 @@ MM_ConcurrentMarkingDelegate::signalThreadsToDeactivateWriteBarrier(MM_Environme
 		GC_VMInterface::lockVMThreadList(extensions);
 		GC_VMThreadListIterator vmThreadListIterator(_javaVM);
 		J9VMThread *walkThread;
+		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 		/* Reset vmThread flag so mutators don't dirty cards or run write barriers until next concurrent KO */
 		while ((walkThread = vmThreadListIterator.nextVMThread()) != NULL) {
+			MM_EnvironmentBase *walkEnv = MM_EnvironmentBase::getEnvironment(walkThread->omrVMThread);
 			walkThread->privateFlags &= ~J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+			if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
+				walkEnv->setAllocationColor(GC_UNMARK);
+				if (extensions->debugSATBlevel >= 2) {
+					omrtty_printf("** [SATB] [signalThreadsToDeactivateWriteBarrier] %i[%p] ** \n", walkEnv->getWorkerID(), walkEnv);
+				}
+			}
 		}
 		GC_VMInterface::unlockVMThreadList(extensions);
 	}
