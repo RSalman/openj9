@@ -23,6 +23,10 @@
 #if !defined(BYTECODEINTERPRETER_HPP_)
 #define BYTECODEINTERPRETER_HPP_
 
+#if defined(OMR_GC_SATB_M1_STRICT)
+ #include <assert.h>
+#endif /* OMR_GC_SATB_M1_STRICT */
+
 #include "j9.h"
 #include "j9cfg.h"
 #include "j9protos.h"
@@ -3211,6 +3215,9 @@ done:
 	VMINLINE VM_BytecodeAction
 	inlReferenceGetImpl(REGISTER_ARGS_LIST)
 	{
+#if defined(OMR_GC_SATB_M1_STRICT)
+		assert(0);
+#endif /* OMR_GC_SATB_M1_STRICT */
 		/* Only called from java for metronome GC policy */
 		j9object_t referent = _vm->memoryManagerFunctions->j9gc_objaccess_referenceGet(_currentThread, *(j9object_t*)_sp);
 		returnObjectFromINL(REGISTER_ARGS, referent, 1);
