@@ -63,7 +63,6 @@ static void dumpStackFrames(J9VMThread *currentThread);
 static void traceAllocateIndexableObject(J9VMThread *vmThread, J9Class* clazz, uintptr_t objSize, uintptr_t numberOfIndexedFields);
 static J9Object * traceAllocateObject(J9VMThread *vmThread, J9Object * object, J9Class* clazz, uintptr_t objSize, uintptr_t numberOfIndexedFields=0);
 static bool traceObjectCheck(J9VMThread *vmThread, bool *shouldTriggerAllocationSampling = NULL);
-static void checkColorAndMark(MM_EnvironmentBase *env, J9Object *objectPtr);
 
 #define STACK_FRAMES_TO_DUMP	8
 
@@ -129,8 +128,8 @@ J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFla
 		vmThread->javaVM->internalVMFunctions->defaultValueWithUnflattenedFlattenables(vmThread, clazz, objectPtr);
 	}
 
-	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled() && objectPtr != NULL) {
-		checkColorAndMark(env, objectPtr);
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -309,17 +308,6 @@ traceObjectCheck(J9VMThread *vmThread, bool *shouldTriggerAllocationSampling)
 	return false;
 }
 
-static void
-checkColorAndMark(MM_EnvironmentBase *env, J9Object *objectPtr)
-{
-	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
-
-	Assert_MM_true(objectPtr != NULL);
-	if (GC_MARK == env->getAllocationColor()) {
-		((MM_ParallelGlobalGC *)extensions->getGlobalCollector())->getMarkingScheme()->markObject(env, objectPtr, true);
-	}
-}
-
 /**
  * High level fast path allocate routine (used by VM and JIT) to allocate an indexable object.  This method does not need to be called with
  * a resolve frame as it cannot cause a GC.  If the attempt at allocation fails, the method will return null and it is the caller's 
@@ -383,8 +371,8 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 		}
 	}
 
-	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled() && objectPtr != NULL) {
-		checkColorAndMark(env, objectPtr);
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -530,8 +518,8 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 	}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
 
-	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
-		checkColorAndMark(env, objectPtr);
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -673,8 +661,8 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 	}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
 
-	if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
-		checkColorAndMark(env, objectPtr);
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
 	}
 	
 	return objectPtr;

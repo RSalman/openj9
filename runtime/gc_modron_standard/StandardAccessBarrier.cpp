@@ -327,7 +327,7 @@ MM_StandardAccessBarrier::preBatchObjectStoreImpl(J9VMThread *vmThread, J9Object
 	/* Call the concurrent write barrier if required */
 
 #if defined(OMR_GC_SATB_M1_STRICT)
-	if (_extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled() && isSATBBarrierActive( MM_EnvironmentStandard::getEnvironment(vmThread->omrVMThread)) ) {
+	if (isSATBBarrierActive( MM_EnvironmentStandard::getEnvironment(vmThread->omrVMThread)) ) {
 			Assert_MM_unreachable();
 	}
 #endif /* OMR_GC_SATB_M1_STRICT */
