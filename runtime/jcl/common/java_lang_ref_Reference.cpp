@@ -25,6 +25,7 @@
 #include "jclglob.h"
 #include "jclprots.h"
 #include "jcl_internal.h"
+#include <assert.h> 
 
 extern "C" {
 
@@ -38,6 +39,7 @@ Java_java_lang_ref_Reference_reprocess(JNIEnv *env, jobject recv)
 	J9MemoryManagerFunctions* mmFuncs = vm->memoryManagerFunctions;
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	j9object_t receiverObject = J9_JNI_UNWRAP_REFERENCE(recv);
+	//assert(0);
 	if (J9_GC_POLICY_METRONOME == vm->gcPolicy) {
 		/* Under metronome call getReferent, which will mark the referent if a GC is in progress. */
 		mmFuncs->j9gc_objaccess_referenceGet(currentThread, receiverObject);

@@ -150,6 +150,7 @@ MM_StandardAccessBarrier::preObjectStoreImpl(J9VMThread *vmThread, J9Object *des
 	if (isSATBBarrierActive(env)) {
 		if (NULL != destObject) {
 			if (isDoubleBarrierActiveOnThread(vmThread)) {
+				Assert_MM_unreachable();
 				rememberObjectToRescan(env, value);
 			}
 
@@ -172,6 +173,7 @@ MM_StandardAccessBarrier::preObjectStoreImpl(J9VMThread *vmThread, J9Object **de
 
 	if (isSATBBarrierActive(env)) {
 		if (isDoubleBarrierActiveOnThread(vmThread)) {
+			Assert_MM_unreachable();
 			rememberObjectToRescan(env, value);
 		}
 		J9Object* oldObject = NULL;
@@ -328,13 +330,20 @@ MM_StandardAccessBarrier::preBatchObjectStoreImpl(J9VMThread *vmThread, J9Object
 
 #if defined(OMR_GC_SATB_M1_STRICT)
 	if (isSATBBarrierActive( MM_EnvironmentStandard::getEnvironment(vmThread->omrVMThread)) ) {
-			Assert_MM_unreachable();
+		Assert_MM_unreachable();
+		OMRPORT_ACCESS_FROM_ENVIRONMENT(MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread));
+		omrtty_printf("######### HERERERRERE ######### \n");
+		UDATA offset = J9VMJAVALANGREFREFERENCE_REFERENT_OFFSET(vmThread);
+		J9Object *referent = mixedObjectReadObject(vmThread, dstObject, offset, false);
+		rememberObjectToRescan(MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread), referent);
+		return;
 	}
 #endif /* OMR_GC_SATB_M1_STRICT */
 
 	if(_extensions->concurrentMark && 
 		(vmThread->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE) &&
 		_extensions->isOld(dstObject)) {
+		Assert_MM_unreachable();
 		J9ConcurrentWriteBarrierBatchStore(vmThread->omrVMThread, dstObject);
 	}
 #endif /* OMR_GC_MODRON_CONCURRENT_MARK */
@@ -357,6 +366,7 @@ MM_StandardAccessBarrier::preBatchObjectStoreImpl(J9VMThread *vmThread, J9Object
 void 
 MM_StandardAccessBarrier::recentlyAllocatedObject(J9VMThread *vmThread, J9Object *dstObject) 
 { 
+	//Anything need to be done here?
 #if defined(J9VM_GC_GENERATIONAL)
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(vmThread);
 

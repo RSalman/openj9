@@ -110,6 +110,7 @@ J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFla
 			env->_isInNoGCAllocationCall = true;
 			objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &mixedOAM);
 			if (NULL != objectPtr) {
+				extensions->checkColorAndMark(env, objectPtr);
 				uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 				Assert_MM_true(allocatedBytes == mixedOAM.getAllocateDescription()->getContiguousBytes());
 				if (LN_HAS_LOCKWORD(vmThread, objectPtr)) {
@@ -355,6 +356,7 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 			env->_isInNoGCAllocationCall = true;
 			objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &indexableOAM);
 			if (NULL != objectPtr) {
+				extensions->checkColorAndMark(env, objectPtr);
 				uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 				Assert_MM_true(allocatedBytes == indexableOAM.getAllocateDescription()->getContiguousBytes());
 			}
@@ -374,6 +376,8 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 	if (objectPtr != NULL) {
 		extensions->checkColorAndMark(env, objectPtr);
 	}
+
+//	Assert_MM_true(objectPtr != NULL);
 
 	return objectPtr;
 }
@@ -415,6 +419,7 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 	if (mixedOAM.initializeAllocateDescription(env)) {
 		objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &mixedOAM);
 		if (NULL != objectPtr) {
+			MM_GCExtensions::getExtensions(env)->checkColorAndMark(env, objectPtr);
 			uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 			Assert_MM_true(allocatedBytes == mixedOAM.getAllocateDescription()->getContiguousBytes());
 			if (LN_HAS_LOCKWORD(vmThread, objectPtr)) {
@@ -522,6 +527,8 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 		extensions->checkColorAndMark(env, objectPtr);
 	}
 
+//	Assert_MM_true(objectPtr != NULL);
+
 	return objectPtr;
 }
 
@@ -560,6 +567,7 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 	if (indexableOAM.initializeAllocateDescription(env)) {
 		objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &indexableOAM);
 		if (NULL != objectPtr) {
+			extensions->checkColorAndMark(env, objectPtr);
 			uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 			Assert_MM_true(allocatedBytes == indexableOAM.getAllocateDescription()->getContiguousBytes());
 		}
@@ -665,6 +673,8 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 		extensions->checkColorAndMark(env, objectPtr);
 	}
 	
+	Assert_MM_true(objectPtr != NULL);
+
 	return objectPtr;
 }
 

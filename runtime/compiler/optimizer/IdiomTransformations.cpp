@@ -5783,6 +5783,7 @@ CISCTransform2ArrayCopySub(TR_CISCTransformer *trans, TR::Node *indexRepNode, TR
          case gc_modron_wrtbar_cardmark:
          case gc_modron_wrtbar_cardmark_and_oldcheck:
          case gc_modron_wrtbar_cardmark_incremental:
+         case gc_modron_wrtbar_always:
             needWriteBarrier = true;
             break;
          default:

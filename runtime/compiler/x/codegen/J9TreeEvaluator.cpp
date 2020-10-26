@@ -2590,11 +2590,11 @@ TR::Register *J9::X86::TreeEvaluator::ArrayStoreCHKEvaluator(TR::Node *node, TR:
    TR::Node *firstChild = node->getFirstChild();
    TR::Node *sourceChild = firstChild->getSecondChild();
 
-   static bool isRealTimeGC = comp->getOptions()->realTimeGC();
+   static bool isRealTimeGC = true;//comp->getOptions()->realTimeGC();
    auto gcMode = TR::Compiler->om.writeBarrierType();
 
    bool isNonRTWriteBarrierRequired = (gcMode != gc_modron_wrtbar_none && !firstChild->skipWrtBar()) ? true : false;
-   bool generateWriteBarrier = isRealTimeGC || isNonRTWriteBarrierRequired;
+   bool generateWriteBarrier = true/*isRealTimeGC || isNonRTWriteBarrierRequired*/;
    bool nopASC = (node->getArrayStoreClassInNode() &&
                   comp->performVirtualGuardNOPing() &&
                   !fej9->classHasBeenExtended(node->getArrayStoreClassInNode())
@@ -2790,13 +2790,13 @@ TR::Register *J9::X86::TreeEvaluator::ArrayStoreCHKEvaluator(TR::Node *node, TR:
       {
       generateLabelInstruction(LABEL, node, startOfWrtbarLabel, cg);
 
-      if (!isRealTimeGC)
-         {
-         // HACK: set the nullness property on the source so that the write barrier
-         //       doesn't do the same test.
-         //
-         sourceChild->setIsNonNull(true);
-         }
+//      if (!isRealTimeGC)
+//         {
+//         // HACK: set the nullness property on the source so that the write barrier
+//         //       doesn't do the same test.
+//         //
+//         sourceChild->setIsNonNull(true);
+//         }
 
       TR::TreeEvaluator::VMwrtbarWithStoreEvaluator(
          node,
@@ -2826,59 +2826,59 @@ TR::Register *J9::X86::TreeEvaluator::ArrayStoreCHKEvaluator(TR::Node *node, TR:
 
    TR::Instruction *dependencyAnchorInstruction = NULL;
 
-   if (!isRealTimeGC)
-      {
-      if (generateWriteBarrier)
-         {
-         assert(isNonRTWriteBarrierRequired);
-         assert(tempMR);
-
-         // HACK: reset the nullness property on the source.
-         //
-         sourceChild->setIsNonNull(isSourceNonNull);
-
-         // Perform the NULL store that was bypassed earlier by the write barrier.
-         //
-         TR_OutlinedInstructionsGenerator og(nullTargetLabel, node, cg);
-
-         tempMR2 = generateX86MemoryReference(*tempMR, 0, cg);
-
-         if (usingCompressedPointers)
-            generateMemRegInstruction(S4MemReg, node, tempMR2, compressedRegister, cg);
-         else
-            generateMemRegInstruction(SMemReg(), node, tempMR2, sourceRegister, cg);
-
-         generateLabelInstruction(JMP4, node, doneLabel, cg);
-         og.endOutlinedInstructionSequence();
-         }
-      else
-         {
-         // No write barrier emitted.  Evaluate the store here.
-         //
-         assert(!isNonRTWriteBarrierRequired);
-         assert(doneLabel == nullTargetLabel);
-
-         // This is where the dependency condition will eventually go.
-         //
-         dependencyAnchorInstruction = cg->getAppendInstruction();
-
-         tempMR = generateX86MemoryReference(firstChild, cg);
-
-         TR::X86MemRegInstruction *storeInstr;
-
-         if (usingCompressedPointers)
-            storeInstr = generateMemRegInstruction(S4MemReg, node, tempMR, compressedRegister, cg);
-         else
-            storeInstr = generateMemRegInstruction(SMemReg(), node, tempMR, sourceRegister, cg);
-
-         cg->setImplicitExceptionPoint(storeInstr);
-
-         if (!usingLowMemHeap || useShiftedOffsets)
-            cg->decReferenceCount(sourceChild);
-         cg->decReferenceCount(destinationChild);
-         tempMR->decNodeReferenceCounts(cg);
-         }
-      }
+//   if (!isRealTimeGC)
+//      {
+//      if (generateWriteBarrier)
+//         {
+//         assert(isNonRTWriteBarrierRequired);
+//         assert(tempMR);
+//
+//         // HACK: reset the nullness property on the source.
+//         //
+//         sourceChild->setIsNonNull(isSourceNonNull);
+//
+//         // Perform the NULL store that was bypassed earlier by the write barrier.
+//         //
+//         TR_OutlinedInstructionsGenerator og(nullTargetLabel, node, cg);
+//
+//         tempMR2 = generateX86MemoryReference(*tempMR, 0, cg);
+//
+//         if (usingCompressedPointers)
+//            generateMemRegInstruction(S4MemReg, node, tempMR2, compressedRegister, cg);
+//         else
+//            generateMemRegInstruction(SMemReg(), node, tempMR2, sourceRegister, cg);
+//
+//         generateLabelInstruction(JMP4, node, doneLabel, cg);
+//         og.endOutlinedInstructionSequence();
+//         }
+//      else
+//         {
+//         // No write barrier emitted.  Evaluate the store here.
+//         //
+//         assert(!isNonRTWriteBarrierRequired);
+//         assert(doneLabel == nullTargetLabel);
+//
+//         // This is where the dependency condition will eventually go.
+//         //
+//         dependencyAnchorInstruction = cg->getAppendInstruction();
+//
+//         tempMR = generateX86MemoryReference(firstChild, cg);
+//
+//         TR::X86MemRegInstruction *storeInstr;
+//
+//         if (usingCompressedPointers)
+//            storeInstr = generateMemRegInstruction(S4MemReg, node, tempMR, compressedRegister, cg);
+//         else
+//            storeInstr = generateMemRegInstruction(SMemReg(), node, tempMR, sourceRegister, cg);
+//
+//         cg->setImplicitExceptionPoint(storeInstr);
+//
+//         if (!usingLowMemHeap || useShiftedOffsets)
+//            cg->decReferenceCount(sourceChild);
+//         cg->decReferenceCount(destinationChild);
+//         tempMR->decNodeReferenceCounts(cg);
+//         }
+//      }
 
    // -------------------------------------------------------------------------
    //
@@ -9627,7 +9627,7 @@ inlineCompareAndSwapNative(
    TR_X86ScratchRegisterManager *scratchRegisterManagerForRealTime = NULL;
    TR::Register *storeAddressRegForRealTime = NULL;
 
-   if (comp->getOptions()->realTimeGC() && isObject)
+   if (/*comp->getOptions()->realTimeGC() &&*/ isObject)
       {
       scratchRegisterManagerForRealTime = cg->generateScratchRegisterManager();
 
@@ -9728,7 +9728,7 @@ inlineCompareAndSwapNative(
 
    // Non-realtime: Generate a write barrier for this kind of object.
    //
-   if (!comp->getOptions()->realTimeGC() && isObject)
+   if (comp->getOptions()->realTimeGC() && isObject)
       {
       // We could insert a runtime test for whether the write actually succeeded or not.
       // However, since in practice it will almost always succeed we do not want to
@@ -9739,13 +9739,13 @@ inlineCompareAndSwapNative(
       //
       TR_X86ScratchRegisterManager *scratchRegisterManager = cg->generateScratchRegisterManager();
 
-      TR::TreeEvaluator::VMwrtbarWithoutStoreEvaluator(
-         node,
-         objectChild,
-         translatedNode,
-         NULL,
-         scratchRegisterManager,
-         cg);
+//      TR::TreeEvaluator::VMwrtbarWithoutStoreEvaluator(
+//         node,
+//         objectChild,
+//         translatedNode,
+//         NULL,
+//         scratchRegisterManager,
+//         cg);
       }
 
    node->setRegister(resultReg);
@@ -9915,7 +9915,7 @@ bool J9::X86::TreeEvaluator::VMinlineCallEvaluator(
             break;
          case TR::sun_misc_Unsafe_compareAndSwapObject_jlObjectJjlObjectjlObject_Z:
             {
-            static bool UseOldCompareAndSwapObject = (bool)feGetEnv("TR_UseOldCompareAndSwapObject");
+            static bool UseOldCompareAndSwapObject = true;//(bool)feGetEnv("TR_UseOldCompareAndSwapObject");
             if(node->isSafeForCGToFastPathUnsafeCall())
                {
                if (UseOldCompareAndSwapObject)
@@ -10150,7 +10150,7 @@ void J9::X86::TreeEvaluator::VMwrtbarRealTimeWithoutStoreEvaluator(
    {
    TR::Compilation *comp = cg->comp();
    TR_J9VMBase *fej9 = (TR_J9VMBase *)(cg->fe());
-   TR_ASSERT(comp->getOptions()->realTimeGC(),"Call the non real-time barrier");
+   //TR_ASSERT(comp->getOptions()->realTimeGC(),"Call the non real-time barrier");
    auto gcMode = TR::Compiler->om.writeBarrierType();
 
    if (node->getOpCode().isWrtBar() && node->skipWrtBar())
@@ -10254,56 +10254,56 @@ void J9::X86::TreeEvaluator::VMwrtbarRealTimeWithoutStoreEvaluator(
    dummyDestAddressNode->setRegister(storeAddressRegForRealTime);
    TR::Node *callNode = TR::Node::createWithSymRef(TR::call, 3, 3, sourceObject, dummyDestAddressNode, destOwningObject, wrtBarSymRef);
 
-   if (comp->getOption(TR_DisableInlineWriteBarriersRT))
-      {
+//   if (comp->getOption(TR_DisableInlineWriteBarriersRT))
+//      {
       cg->evaluate(callNode);
-      }
-   else
-      {
-      TR_OutlinedInstructions *outlinedHelperCall = new (cg->trHeapMemory()) TR_OutlinedInstructions(callNode, TR::call, NULL, snippetLabel, doneLabel, cg);
-
-      // have to disassemble the call node we just created, first have to give it a ref count 1
-      callNode->setReferenceCount(1);
-      cg->recursivelyDecReferenceCount(callNode);
-
-      cg->getOutlinedInstructionsList().push_front(outlinedHelperCall);
-      cg->generateDebugCounter(
-            outlinedHelperCall->getFirstInstruction(),
-            TR::DebugCounter::debugCounterName(comp, "helperCalls/%s/(%s)/%d/%d", node->getOpCode().getName(), comp->signature(), node->getByteCodeInfo().getCallerIndex(), node->getByteCodeInfo().getByteCodeIndex()),
-            1, TR::DebugCounter::Cheap);
-
-      if (comp->getOption(TR_CountWriteBarriersRT))
-         {
-         TR::MemoryReference *barrierCountMR = generateX86MemoryReference(cg->getVMThreadRegister(), offsetof(J9VMThread, debugEventData6), cg);
-         generateMemInstruction(INCMem(comp->target().is64Bit()), node, barrierCountMR, cg);
-         }
-
-      tempReg = srm->findOrCreateScratchRegister();
-
-      // if barrier not enabled, nothing to do
-      TR::MemoryReference *fragmentParentMR = generateX86MemoryReference(cg->getVMThreadRegister(), fej9->thisThreadRememberedSetFragmentOffset() + fej9->getFragmentParentOffset(), cg);
-      generateRegMemInstruction(LRegMem(comp->target().is64Bit()), node, tempReg, fragmentParentMR, cg);
-      TR::MemoryReference *globalFragmentIDMR = generateX86MemoryReference(tempReg, fej9->getRememberedSetGlobalFragmentOffset(), cg);
-      generateMemImmInstruction(CMPMemImms(), node, globalFragmentIDMR, 0, cg);
-      generateLabelInstruction(JE4, node, doneLabel, cg);
-
-      // now check if double barrier is enabled and definitely execute the barrier if it is
-      // if (vmThread->localFragmentIndex == 0) goto snippetLabel
-      TR::MemoryReference *localFragmentIndexMR = generateX86MemoryReference(cg->getVMThreadRegister(), fej9->thisThreadRememberedSetFragmentOffset() + fej9->getLocalFragmentOffset(), cg);
-      generateMemImmInstruction(CMPMemImms(), node, localFragmentIndexMR, 0, cg);
-      generateLabelInstruction(JE4, node, snippetLabel, cg);
-
-      // null test on the reference we're about to store over: if it is null goto doneLabel
-      // if (destObject->field == null) goto doneLabel
-      TR::MemoryReference *nullTestMR = generateX86MemoryReference(storeAddressRegForRealTime, 0, cg);
-      if (comp->target().is64Bit() && comp->useCompressedPointers())
-         generateMemImmInstruction(CMP4MemImms, node, nullTestMR, 0, cg);
-      else
-         generateMemImmInstruction(CMPMemImms(), node, nullTestMR, 0, cg);
-      generateLabelInstruction(JNE4, node, snippetLabel, cg);
-
-      // fall-through means write barrier not needed, just do the store
-      }
+//      }
+//   else
+//      {
+//      TR_OutlinedInstructions *outlinedHelperCall = new (cg->trHeapMemory()) TR_OutlinedInstructions(callNode, TR::call, NULL, snippetLabel, doneLabel, cg);
+//
+//      // have to disassemble the call node we just created, first have to give it a ref count 1
+//      callNode->setReferenceCount(1);
+//      cg->recursivelyDecReferenceCount(callNode);
+//
+//      cg->getOutlinedInstructionsList().push_front(outlinedHelperCall);
+//      cg->generateDebugCounter(
+//            outlinedHelperCall->getFirstInstruction(),
+//            TR::DebugCounter::debugCounterName(comp, "helperCalls/%s/(%s)/%d/%d", node->getOpCode().getName(), comp->signature(), node->getByteCodeInfo().getCallerIndex(), node->getByteCodeInfo().getByteCodeIndex()),
+//            1, TR::DebugCounter::Cheap);
+//
+//      if (comp->getOption(TR_CountWriteBarriersRT))
+//         {
+//         TR::MemoryReference *barrierCountMR = generateX86MemoryReference(cg->getVMThreadRegister(), offsetof(J9VMThread, debugEventData6), cg);
+//         generateMemInstruction(INCMem(comp->target().is64Bit()), node, barrierCountMR, cg);
+//         }
+//
+//      tempReg = srm->findOrCreateScratchRegister();
+//
+//      // if barrier not enabled, nothing to do
+//      TR::MemoryReference *fragmentParentMR = generateX86MemoryReference(cg->getVMThreadRegister(), fej9->thisThreadRememberedSetFragmentOffset() + fej9->getFragmentParentOffset(), cg);
+//      generateRegMemInstruction(LRegMem(comp->target().is64Bit()), node, tempReg, fragmentParentMR, cg);
+//      TR::MemoryReference *globalFragmentIDMR = generateX86MemoryReference(tempReg, fej9->getRememberedSetGlobalFragmentOffset(), cg);
+//      generateMemImmInstruction(CMPMemImms(), node, globalFragmentIDMR, 0, cg);
+//      generateLabelInstruction(JE4, node, doneLabel, cg);
+//
+//      // now check if double barrier is enabled and definitely execute the barrier if it is
+//      // if (vmThread->localFragmentIndex == 0) goto snippetLabel
+//      TR::MemoryReference *localFragmentIndexMR = generateX86MemoryReference(cg->getVMThreadRegister(), fej9->thisThreadRememberedSetFragmentOffset() + fej9->getLocalFragmentOffset(), cg);
+//      generateMemImmInstruction(CMPMemImms(), node, localFragmentIndexMR, 0, cg);
+//      generateLabelInstruction(JE4, node, snippetLabel, cg);
+//
+//      // null test on the reference we're about to store over: if it is null goto doneLabel
+//      // if (destObject->field == null) goto doneLabel
+//      TR::MemoryReference *nullTestMR = generateX86MemoryReference(storeAddressRegForRealTime, 0, cg);
+//      if (comp->target().is64Bit() && comp->useCompressedPointers())
+//         generateMemImmInstruction(CMP4MemImms, node, nullTestMR, 0, cg);
+//      else
+//         generateMemImmInstruction(CMPMemImms(), node, nullTestMR, 0, cg);
+//      generateLabelInstruction(JNE4, node, snippetLabel, cg);
+//
+//      // fall-through means write barrier not needed, just do the store
+//      }
 
    if (doInternalControlFlow)
       {
@@ -10327,14 +10327,14 @@ void J9::X86::TreeEvaluator::VMwrtbarRealTimeWithoutStoreEvaluator(
 
       conditions->addPostCondition(cg->getVMThreadRegister(), TR::RealRegister::ebp, cg);
 
-      if (!comp->getOption(TR_DisableInlineWriteBarriersRT))
-         {
-         TR_ASSERT(storeAddressRegForRealTime != NULL, "assertion failure");
-         conditions->addPostCondition(storeAddressRegForRealTime, TR::RealRegister::NoReg, cg);
-
-         TR_ASSERT(tempReg != NULL, "assertion failure");
-         conditions->addPostCondition(tempReg, TR::RealRegister::NoReg, cg);
-         }
+//      if (!comp->getOption(TR_DisableInlineWriteBarriersRT))
+//         {
+//         TR_ASSERT(storeAddressRegForRealTime != NULL, "assertion failure");
+//         conditions->addPostCondition(storeAddressRegForRealTime, TR::RealRegister::NoReg, cg);
+//
+//         TR_ASSERT(tempReg != NULL, "assertion failure");
+//         conditions->addPostCondition(tempReg, TR::RealRegister::NoReg, cg);
+//         }
 
       if (destOwningObject->getOpCode().hasSymbolReference()
        && destOwningObject->getSymbol()
@@ -10375,6 +10375,9 @@ void J9::X86::TreeEvaluator::VMwrtbarWithoutStoreEvaluator(
    TR_X86ScratchRegisterManager *srm,
    TR::CodeGenerator          *cg)
    {
+
+	TR_ASSERT(0, "!!!!! VMwrtbarWithoutStoreEvaluator  !!!!");
+
    TR::Compilation *comp = cg->comp();
    TR_J9VMBase *fej9 = (TR_J9VMBase *)(cg->fe());
    TR_ASSERT(!(comp->getOptions()->realTimeGC()),"Call the real-time barrier");
@@ -11023,10 +11026,10 @@ doReferenceStore(
    // for real-time GC, the data reference has already been resolved into an earlier LEA instruction so this padding isn't needed
    //   even if the node symbol is marked as unresolved (the store instruction above is storing through a register
    //   that contains the resolved address)
-   if (!comp->getOptions()->realTimeGC() && node->getSymbolReference()->isUnresolved())
-      {
-      TR::TreeEvaluator::padUnresolvedDataReferences(node, *node->getSymbolReference(), cg);
-      }
+//   if (!comp->getOptions()->realTimeGC() && node->getSymbolReference()->isUnresolved())
+//      {
+//      TR::TreeEvaluator::padUnresolvedDataReferences(node, *node->getSymbolReference(), cg);
+//      }
 
    return instr;
    }
@@ -11124,8 +11127,8 @@ void J9::X86::TreeEvaluator::VMwrtbarWithStoreEvaluator(
    TR::Instruction *storeInstr = NULL;
    TR::Register *storeAddressRegForRealTime = NULL;
 
-   if (isRealTimeGC)
-      {
+//   if (isRealTimeGC)
+//      {
       // Realtime GC evaluates storeMR into a register here and then uses it to do the store after the write barrier
 
       // If reference is unresolved, need to resolve it right here before the barrier starts
@@ -11146,13 +11149,13 @@ void J9::X86::TreeEvaluator::VMwrtbarWithStoreEvaluator(
          if (snippet)
             snippet->resetUnresolvedStore();
          }
-      }
-   else
-      {
-      // Non-realtime does the store first, then the write barrier.
-      //
-      storeInstr = doReferenceStore(node, storeMR, translatedSourceReg, usingCompressedPointers, cg);
-      }
+//      }
+//   else
+//      {
+//      // Non-realtime does the store first, then the write barrier.
+//      //
+//      storeInstr = doReferenceStore(node, storeMR, translatedSourceReg, usingCompressedPointers, cg);
+//      }
 
    if (TR::Compiler->om.writeBarrierType() == gc_modron_wrtbar_always && !isRealTimeGC)
       {
@@ -11185,9 +11188,9 @@ void J9::X86::TreeEvaluator::VMwrtbarWithStoreEvaluator(
       generateLabelInstruction(LABEL, node, doneWrtBarLabel, deps, cg);
       }
    else
-      {
-      if (isRealTimeGC)
-         {
+     {
+//      if (isRealTimeGC)
+//         {
          TR::TreeEvaluator::VMwrtbarRealTimeWithoutStoreEvaluator(
                   node,
                   storeMR,
@@ -11197,28 +11200,28 @@ void J9::X86::TreeEvaluator::VMwrtbarWithStoreEvaluator(
                   NULL,
                   scratchRegisterManager,
                   cg);
-         }
-      else
-         {
-         TR::TreeEvaluator::VMwrtbarWithoutStoreEvaluator(
-            node,
-            destOwningObject,
-            sourceObject,
-            NULL,
-            scratchRegisterManager,
-            cg);
-         }
+//         }
+//      else
+//         {
+//         TR::TreeEvaluator::VMwrtbarWithoutStoreEvaluator(
+//            node,
+//            destOwningObject,
+//            sourceObject,
+//            NULL,
+//            scratchRegisterManager,
+//            cg);
+//         }
       }
 
    // Realtime GCs must do the write barrier first and then the store.
    //
-   if (isRealTimeGC)
-      {
+//   if (isRealTimeGC)
+//      {
       TR_ASSERT(storeAddressRegForRealTime, "assertion failure");
       TR::MemoryReference *myStoreMR = generateX86MemoryReference(storeAddressRegForRealTime, 0, cg);
       storeInstr = doReferenceStore(node, myStoreMR, translatedSourceReg, usingCompressedPointers, cg);
       scratchRegisterManager->reclaimScratchRegister(storeAddressRegForRealTime);
-      }
+//      }
 
    if (!usingLowMemHeap || useShiftedOffsets)
       cg->decReferenceCount(sourceObject);

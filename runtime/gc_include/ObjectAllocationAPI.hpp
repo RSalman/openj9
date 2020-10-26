@@ -41,6 +41,7 @@
 
 #include "AtomicSupport.hpp"
 #include "ObjectMonitor.hpp"
+#include <assert.h>
 
 class MM_ObjectAllocationAPI
 {
@@ -95,6 +96,7 @@ private:
 #if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 				case OMR_GC_ALLOCATION_TYPE_TLH:
 					if (allocateSize <= ((UDATA) currentThread->heapTop - (UDATA) currentThread->heapAlloc)) {
+					assert(0);
 						U_8 *heapAlloc = currentThread->heapAlloc;
 						UDATA afterAlloc = (UDATA)heapAlloc + allocateSize;
 						objectHeader = (j9object_t)heapAlloc;
@@ -109,6 +111,7 @@ private:
 					} else {
 						return NULL;
 					}
+					assert(0);
 					break;
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */
 
@@ -148,7 +151,7 @@ private:
 					/* Inline allocation not supported */
 					return NULL;
 				}
-
+		assert(0);
 				/* Initialize the object */
 				if (J9VMTHREAD_COMPRESS_OBJECT_REFERENCES(currentThread)) {
 					J9IndexableObjectContiguousCompressed *header = (J9IndexableObjectContiguousCompressed*)objectHeader;
@@ -182,6 +185,7 @@ private:
 			case OMR_GC_ALLOCATION_TYPE_TLH:
 
 				if (allocateSize <= ((UDATA) currentThread->heapTop - (UDATA) currentThread->heapAlloc)) {
+				assert(0);
 					U_8 *heapAlloc = currentThread->heapAlloc;
 					UDATA afterAlloc = (UDATA)heapAlloc + allocateSize;
 					objectHeader = (j9object_t) heapAlloc;
@@ -247,6 +251,8 @@ private:
 #endif /* defined(J9VM_GC_THREAD_LOCAL_HEAP) || defined(J9VM_GC_SEGREGATED_HEAP) */
 
 		}
+		
+		assert(0);
 
 		return instance;
 	}
@@ -281,11 +287,13 @@ public:
 			allocateSize = J9_GC_MINIMUM_OBJECT_SIZE;
 		}
 
+
 		/* Allocate the object */
 		switch(_gcAllocationType) {
 #if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 		case OMR_GC_ALLOCATION_TYPE_TLH:
 			if (allocateSize <= ((UDATA) currentThread->heapTop - (UDATA) currentThread->heapAlloc)) {
+				assert(0);
 				U_8 *heapAlloc = currentThread->heapAlloc;
 				UDATA afterAlloc = (UDATA)heapAlloc + allocateSize;
 				currentThread->heapAlloc = (U_8 *)afterAlloc;
@@ -300,6 +308,8 @@ public:
 			} else {
 				return NULL;
 			}
+			
+			assert(0);
 			break;
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */
 
@@ -335,6 +345,8 @@ public:
 		default:
 			return NULL;
 		}
+		
+				assert(0);
 
 		/* Initialize the object */
 		if (J9VMTHREAD_COMPRESS_OBJECT_REFERENCES(currentThread)) {
@@ -364,6 +376,7 @@ public:
 		if (memoryBarrier) {
 			VM_AtomicSupport::writeBarrier();
 		}
+		assert(0);
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP || J9VM_GC_SEGREGATED_HEAP */
 		return instance;
 	}

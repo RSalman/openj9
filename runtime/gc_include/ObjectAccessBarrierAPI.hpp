@@ -48,6 +48,7 @@
 #include "j9nongenerated.h"
 
 #define J9OAB_MIXEDOBJECT_EA(object, offset, type) (type *)(((U_8 *)(object)) + offset)
+#define J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER
 
 class MM_ObjectAccessBarrierAPI
 {
@@ -133,6 +134,7 @@ public:
 	static VMINLINE void
 	internalPostBatchStoreObjectGenerational(J9VMThread *vmThread, j9object_t object)
 	{
+	assert(0);
 		/* Check to see if object is old.  If object is not old neither barrier is required
 		 * if ((object - vmThread->omrVMThread->heapBaseForBarrierRange0) < vmThread->omrVMThread->heapSizeForBarrierRange0) then old
 		 *
@@ -274,6 +276,7 @@ public:
 	static VMINLINE void
 	internalPostObjectStoreCardTableIncremental(J9VMThread *vmThread, j9object_t object, j9object_t value)
 	{
+		assert(0);
 		/* if value is NULL neither barrier is required */
 		if (NULL != value) {
 			/* Check to see if object is within the barrier range.
@@ -302,6 +305,7 @@ public:
 	static VMINLINE void
 	internalPostObjectStoreGenerational(J9VMThread *vmThread, j9object_t object, j9object_t value)
 	{
+	assert(0);
 		/* if value is NULL neither barrier is required */
 		if (NULL != value) {
 			/* Check to see if object is old.
@@ -335,6 +339,7 @@ public:
 	static VMINLINE void
 	internalPostObjectStoreGenerationalNoValueCheck(J9VMThread *vmThread, j9object_t object)
 	{
+	assert(0);
 		/* Check to see if object is old.
 		 * if ((object - vmThread->omrVMThread->heapBaseForBarrierRange0) < vmThread->omrVMThread->heapSizeForBarrierRange0) then old
 		 *
@@ -536,6 +541,7 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_mixedObjectStoreObject(vmThread, srcObject, srcOffset, value, isVolatile);
 		} else {
+			assert(0);
 			fj9object_t *actualAddress = J9OAB_MIXEDOBJECT_EA(srcObject, srcOffset, fj9object_t);
 
 			preMixedObjectStoreObject(vmThread, srcObject, actualAddress, value);
@@ -618,6 +624,7 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			return vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_compareAndExchangeObject(vmThread, destObject, (J9Object **)destAddress, compareObject, swapObject);
 		} else {
+			assert(0);
 			preMixedObjectReadObject(vmThread, destObject, destAddress);
 			preMixedObjectStoreObject(vmThread, destObject, destAddress, swapObject);
 
@@ -1026,8 +1033,8 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_staticStoreObject(vmThread, clazz, srcAddress, value, isVolatile);
 		} else {
+			assert(0);
 			j9object_t classObject = J9VM_J9CLASS_TO_HEAPCLASS(clazz);
-
 			preStaticStoreObject(vmThread, classObject, srcAddress, value);
 
 			protectIfVolatileBefore(isVolatile, false);
@@ -1064,6 +1071,7 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			return (1 == vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_staticCompareAndSwapObject(vmThread, clazz, destAddress, compareObject, swapObject));
 		} else {
+			assert(0);
 			j9object_t classObject = J9VM_J9CLASS_TO_HEAPCLASS(clazz);
 
 			preStaticReadObject(vmThread, clazz, destAddress);
@@ -1106,6 +1114,7 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			return vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_staticCompareAndExchangeObject(vmThread, clazz, destAddress, compareObject, swapObject);
 		} else {
+		assert(0);
 			j9object_t classObject = J9VM_J9CLASS_TO_HEAPCLASS(clazz);
 
 			preStaticReadObject(vmThread, clazz, destAddress);
@@ -1947,7 +1956,7 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_indexableStoreObject(vmThread, (J9IndexableObject *)srcArray, (I_32)srcIndex, value, isVolatile);
 		} else {
-			fj9object_t *actualAddress = NULL;
+			assert(0);fj9object_t *actualAddress = NULL;
 			if (J9VMTHREAD_COMPRESS_OBJECT_REFERENCES(vmThread)) {
 				actualAddress = (fj9object_t*)J9JAVAARRAY_EA(vmThread, srcArray, srcIndex, U_32);
 			} else {
@@ -1997,7 +2006,7 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			return (1 == vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_compareAndSwapObject(vmThread, destArray, (J9Object **)actualAddress, compareObject, swapObject));
 		} else {
-			preIndexableObjectReadObject(vmThread, destArray, actualAddress);
+			assert(0);preIndexableObjectReadObject(vmThread, destArray, actualAddress);
 			preIndexableObjectStoreObject(vmThread, destArray, actualAddress, swapObject);
 
 			protectIfVolatileBefore(isVolatile, false);
@@ -2044,7 +2053,7 @@ public:
 		if (j9gc_modron_wrtbar_always == _writeBarrierType) {
 			return vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_compareAndExchangeObject(vmThread, destArray, (J9Object **)actualAddress, compareObject, swapObject);
 		} else {
-			preIndexableObjectReadObject(vmThread, destArray, actualAddress);
+			assert(0);preIndexableObjectReadObject(vmThread, destArray, actualAddress);
 			preIndexableObjectStoreObject(vmThread, destArray, actualAddress, swapObject);
 
 			protectIfVolatileBefore(isVolatile, false);
@@ -2096,6 +2105,7 @@ protected:
 	VMINLINE void
 	preMixedObjectStoreObject(J9VMThread *vmThread, j9object_t object, fj9object_t *destAddress, j9object_t value)
 	{
+		assert(0);
 		internalPreStoreObject(vmThread, object, destAddress, value);
 	}
 
@@ -2110,6 +2120,7 @@ protected:
 	VMINLINE void
 	preIndexableObjectStoreObject(J9VMThread *vmThread, j9object_t object, fj9object_t *destAddress, j9object_t value)
 	{
+		assert(0);
 		internalPreStoreObject(vmThread, object, destAddress, value);
 	}
 
@@ -2124,6 +2135,7 @@ protected:
 	VMINLINE void
 	preStaticStoreObject(J9VMThread *vmThread, j9object_t object, j9object_t *destAddress, j9object_t value)
 	{
+		assert(0);
 		internalStaticPreStoreObject(vmThread, object, destAddress, value);
 	}
 
@@ -2546,7 +2558,7 @@ protected:
 	 * unless the value is stored in a non-native format (e.g. compressed object pointers).
 	 *
 	 * @param destAddress the address of the field to be read
-	 * @param value the value to be stored
+	 * @param value the value to be stored 
 	 * @param isVolatile non-zero if the field is volatile, zero otherwise
 	 */
 	VMINLINE void
@@ -2721,6 +2733,7 @@ private:
 	VMINLINE void
 	internalPreStoreObject(J9VMThread *vmThread, j9object_t object, fj9object_t *destAddress, j9object_t value)
 	{
+		assert(0);
 		if ((j9gc_modron_wrtbar_satb == _writeBarrierType) ||
 				(j9gc_modron_wrtbar_satb_and_oldcheck == _writeBarrierType)) {
 			internalPreStoreObjectSATB(vmThread, object, destAddress, value);
@@ -2741,6 +2754,7 @@ private:
 	VMINLINE void
 	internalStaticPreStoreObject(J9VMThread *vmThread, j9object_t object, j9object_t *destAddress, j9object_t value)
 	{
+		assert(0);
 		if ((j9gc_modron_wrtbar_satb == _writeBarrierType) ||
 				(j9gc_modron_wrtbar_satb_and_oldcheck == _writeBarrierType)) {
 			internalStaticPreStoreObjectSATB(vmThread, object, destAddress, value);
@@ -2758,6 +2772,7 @@ private:
 	VMINLINE void
 	internalPreStoreObjectSATB(J9VMThread *vmThread, j9object_t object, fj9object_t *destAddress, j9object_t value)
 	{
+	assert(0);
 #if defined(J9VM_GC_REALTIME)
 		MM_GCRememberedSetFragment *fragment =  &vmThread->sATBBarrierRememberedSetFragment;
 		MM_GCRememberedSet *parent = fragment->fragmentParent;
@@ -2789,6 +2804,7 @@ private:
 	VMINLINE void
 	internalStaticPreStoreObjectSATB(J9VMThread *vmThread, j9object_t object, j9object_t *destAddress, j9object_t value)
 	{
+	assert(0); 
 #if defined(J9VM_GC_REALTIME)
 		MM_GCRememberedSetFragment *fragment =  &vmThread->sATBBarrierRememberedSetFragment;
 		MM_GCRememberedSet *parent = fragment->fragmentParent;
@@ -2847,6 +2863,7 @@ private:
 	VMINLINE void
 	internalPostStoreObject(J9VMThread *vmThread, j9object_t object, j9object_t value)
 	{
+	assert(0);
 		switch(_writeBarrierType) {
 		case j9gc_modron_wrtbar_cardmark_and_oldcheck:
 			internalPostObjectStoreCardTableAndGenerational(vmThread, object, value);
@@ -2876,6 +2893,7 @@ private:
 	VMINLINE void
 	internalPostBatchStoreObject(J9VMThread *vmThread, j9object_t object)
 	{
+		assert(0); 
 		switch(_writeBarrierType) {
 		case j9gc_modron_wrtbar_cardmark_and_oldcheck:
 			internalPostBatchStoreObjectCardTableAndGenerational(vmThread, object);
@@ -2942,6 +2960,7 @@ private:
 	static VMINLINE void
 	rememberObject(J9VMThread *vmThread, j9object_t object)
 	{
+	assert(0);
 #if defined (J9VM_GC_GENERATIONAL)
 		if (atomicSetRemembered(vmThread, object)) {
 			J9VMGCSublistFragment *fragment = &vmThread->gcRememberedSet;

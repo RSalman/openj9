@@ -27,6 +27,8 @@
 #include "j9comp.h"
 #include "omr.h"
 
+#define J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER
+
 /*
  * Define type used to represent the class in the 'clazz' slot of an object's header
  */
