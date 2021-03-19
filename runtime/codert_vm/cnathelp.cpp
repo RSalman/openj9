@@ -2581,7 +2581,7 @@ old_slow_jitTypeCheckArrayStore(J9VMThread *currentThread)
 void J9FASTCALL
 fast_jitWriteBarrierBatchStore(J9VMThread *currentThread, j9object_t destinationObject)
 {
-	currentThread->javaVM->memoryManagerFunctions->J9WriteBarrierBatchStore(currentThread, destinationObject);
+	currentThread->javaVM->memoryManagerFunctions->J9WriteBarrierBatchStore(currentThread, destinationObject, 1);
 }
 
 void J9FASTCALL
@@ -2595,7 +2595,7 @@ old_fast_jitWriteBarrierBatchStore(J9VMThread *currentThread)
 void J9FASTCALL
 fast_jitWriteBarrierBatchStoreWithRange(J9VMThread *currentThread, j9object_t destinationObject, UDATA destinationPtr, UDATA range)
 {
-	currentThread->javaVM->memoryManagerFunctions->J9WriteBarrierBatchStore(currentThread, destinationObject);
+	currentThread->javaVM->memoryManagerFunctions->J9WriteBarrierBatchStore(currentThread, destinationObject, 1);
 }
 
 void J9FASTCALL
@@ -2611,7 +2611,7 @@ old_fast_jitWriteBarrierBatchStoreWithRange(J9VMThread *currentThread)
 void J9FASTCALL
 fast_jitWriteBarrierJ9ClassBatchStore(J9VMThread *currentThread, J9Class *destinationClass)
 {
-	currentThread->javaVM->memoryManagerFunctions->J9WriteBarrierJ9ClassBatchStore(currentThread, destinationClass);
+	currentThread->javaVM->memoryManagerFunctions->J9WriteBarrierJ9ClassBatchStore(currentThread, destinationClass, 1);
 }
 
 void J9FASTCALL

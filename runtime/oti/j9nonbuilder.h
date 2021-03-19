@@ -3999,9 +3999,9 @@ typedef struct J9MemoryManagerFunctions {
 	j9object_t  ( *J9AllocateIndexableObjectNoGC)(struct J9VMThread *vmThread, J9Class *clazz, U_32 numberIndexedFields, UDATA allocateFlags) ;
 	j9object_t  ( *J9AllocateObjectNoGC)(struct J9VMThread *vmThread, J9Class *clazz, UDATA allocateFlags) ;
 	void  ( *J9WriteBarrierStore)(struct J9VMThread *vmThread, j9object_t destinationObject, j9object_t storedObject) ;
-	void  ( *J9WriteBarrierBatchStore)(struct J9VMThread *vmThread, j9object_t destinationObject) ;
+	void  ( *J9WriteBarrierBatchStore)(struct J9VMThread *vmThread, j9object_t destinationObject, int jit) ;
 	void  ( *J9WriteBarrierJ9ClassStore)(struct J9VMThread *vmThread, J9Class *destinationJ9Class, j9object_t storedObject) ;
-	void  ( *J9WriteBarrierJ9ClassBatchStore)(struct J9VMThread *vmThread, J9Class *destinationJ9Class) ;
+	void  ( *J9WriteBarrierJ9ClassBatchStore)(struct J9VMThread *vmThread, J9Class *destinationJ9Class, int jit) ;
 	UDATA  ( *allocateMemoryForSublistFragment)(void *vmThread, J9VMGC_SublistFragment *fragmentPrimitive) ;
 	UDATA  ( *j9gc_heap_free_memory)(struct J9JavaVM *javaVM) ;
 	UDATA  ( *j9gc_heap_total_memory)(struct J9JavaVM *javaVM) ;

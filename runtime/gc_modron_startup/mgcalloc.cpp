@@ -50,6 +50,7 @@
 #include "ObjectAllocationInterface.hpp"
 #include "ObjectModel.hpp"
 #include "ObjectMonitor.hpp"
+#include "Configuration.hpp"
 #if defined (J9VM_GC_REALTIME)
 #include "Scheduler.hpp"
 #endif /* J9VM_GC_REALTIME */
@@ -84,9 +85,8 @@ J9Object *
 J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
-
-#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
+#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	if (extensions->instrumentableAllocateHookEnabled || !env->isInlineTLHAllocateEnabled()) {
 		/* This function is restricted to only being used for instrumentable allocates so we only need to check that one allocation hook.
 		 * Note that we can't handle hooked allocates since we might be called without a JIT resolve frame and that is required for us to
@@ -110,6 +110,7 @@ J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFla
 			env->_isInNoGCAllocationCall = true;
 			objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &mixedOAM);
 			if (NULL != objectPtr) {
+				extensions->checkColorAndMark(env, objectPtr);
 				uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 				Assert_MM_true(allocatedBytes == mixedOAM.getAllocateDescription()->getContiguousBytes());
 				if (LN_HAS_LOCKWORD(vmThread, objectPtr)) {
@@ -126,6 +127,10 @@ J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFla
 
 	if ((NULL != objectPtr) && J9_ARE_ALL_BITS_SET(clazz->classFlags, J9ClassContainsUnflattenedFlattenables)) {
 		vmThread->javaVM->internalVMFunctions->defaultValueWithUnflattenedFlattenables(vmThread, clazz, objectPtr);
+	}
+
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -324,9 +329,9 @@ J9Object *
 J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t numberOfIndexedFields, uintptr_t allocateFlags)
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
-	
-#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
+		
+#if defined(J9VM_GC_THREAD_LOCAL_HEAP)
 	if (extensions->instrumentableAllocateHookEnabled || !env->isInlineTLHAllocateEnabled()) {
 		/* This function is restricted to only being used for instrumentable allocates so we only need to check that one allocation hook.
 		 * Note that we can't handle hooked allocates since we might be called without a JIT resolve frame and that is required for us to
@@ -351,6 +356,7 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 			env->_isInNoGCAllocationCall = true;
 			objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &indexableOAM);
 			if (NULL != objectPtr) {
+				extensions->checkColorAndMark(env, objectPtr);
 				uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 				Assert_MM_true(allocatedBytes == indexableOAM.getAllocateDescription()->getContiguousBytes());
 			}
@@ -366,6 +372,12 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 			objectAccessBarrier.inlineIndexableObjectStoreObject(vmThread, objectPtr, index, defaultValue);
 		}
 	}
+
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
+	}
+
+//	Assert_MM_true(objectPtr != NULL);
 
 	return objectPtr;
 }
@@ -407,6 +419,7 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 	if (mixedOAM.initializeAllocateDescription(env)) {
 		objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &mixedOAM);
 		if (NULL != objectPtr) {
+			MM_GCExtensions::getExtensions(env)->checkColorAndMark(env, objectPtr);
 			uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 			Assert_MM_true(allocatedBytes == mixedOAM.getAllocateDescription()->getContiguousBytes());
 			if (LN_HAS_LOCKWORD(vmThread, objectPtr)) {
@@ -510,6 +523,12 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 	}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
 
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
+	}
+
+//	Assert_MM_true(objectPtr != NULL);
+
 	return objectPtr;
 }
 
@@ -548,6 +567,7 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 	if (indexableOAM.initializeAllocateDescription(env)) {
 		objectPtr = OMR_GC_AllocateObject(vmThread->omrVMThread, &indexableOAM);
 		if (NULL != objectPtr) {
+			extensions->checkColorAndMark(env, objectPtr);
 			uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 			Assert_MM_true(allocatedBytes == indexableOAM.getAllocateDescription()->getContiguousBytes());
 		}
@@ -648,6 +668,12 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 		env->disableInlineTLHAllocate();
 	}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
+
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
+	}
+	
+	Assert_MM_true(objectPtr != NULL);
 
 	return objectPtr;
 }

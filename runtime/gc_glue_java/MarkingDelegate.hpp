@@ -101,12 +101,14 @@ public:
 	 * Delegate methods interfacing with MM_MarkingScheme.
 	 */
 	void workerSetupForGC(MM_EnvironmentBase *env);
-	void workerCompleteGC(MM_EnvironmentBase *env);
+	void workerCompleteGC(MM_EnvironmentBase *env, bool concurrentSATB = false);
 	void workerCleanupAfterGC(MM_EnvironmentBase *env);
 	void mainSetupForGC(MM_EnvironmentBase *env);
 	void mainSetupForWalk(MM_EnvironmentBase *env);
 	void mainCleanupAfterGC(MM_EnvironmentBase *env);
-	void scanRoots(MM_EnvironmentBase *env);
+	void scanRoots(MM_EnvironmentBase *env, bool concurrentSATB = false);
+	void processUnfinalizedAndOwnableLists(MM_EnvironmentBase *env);
+	
 	void completeMarking(MM_EnvironmentBase *env);
 
 	uintptr_t setupIndexableScanner(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, MM_MarkingSchemeScanReason reason, uintptr_t *sizeToDo, uintptr_t *sizeInElementsToDo, fomrobject_t **basePtr, uintptr_t *flags) { return 0; }

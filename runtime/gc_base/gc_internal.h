@@ -64,7 +64,7 @@ extern J9_CFUNC UDATA j9gc_objaccess_indexableReadU16(J9VMThread *vmThread, J9In
 extern J9_CFUNC void j9gc_flush_caches_for_walk(J9JavaVM *javaVM);
 extern J9_CFUNC void j9gc_flush_nonAllocationCaches_for_walk(J9JavaVM *javaVM);
 extern J9_CFUNC UDATA alwaysCallReferenceArrayCopyHelper(J9JavaVM *javaVM);
-extern J9_CFUNC void J9WriteBarrierBatchStore(J9VMThread *vmThread, j9object_t destinationObject);
+extern J9_CFUNC void J9WriteBarrierBatchStore(J9VMThread *vmThread, j9object_t destinationObject, int jit);
 extern J9_CFUNC IDATA j9gc_objaccess_indexableReadI16(J9VMThread *vmThread, J9IndexableObject *srcObject, I_32 index, UDATA isVolatile);
 extern J9_CFUNC void J9WriteBarrierStore(J9VMThread *vmThread, j9object_t destinationObject, j9object_t storedObject);
 extern J9_CFUNC UDATA j9gc_heap_total_memory(J9JavaVM *javaVM);
@@ -89,7 +89,7 @@ extern J9_CFUNC void j9gc_objaccess_indexableStoreI16(J9VMThread *vmThread, J9In
 extern J9_CFUNC void j9gc_all_object_and_vm_slots_do(J9JavaVM *javaVM, void *function, void *userData, UDATA walkFlags);
 extern J9_CFUNC j9object_t j9gc_objaccess_referenceGet(J9VMThread *vmThread, j9object_t refObject);
 extern J9_CFUNC UDATA j9gc_ext_check_is_valid_heap_object(J9JavaVM *javaVM, j9object_t ptr, UDATA flags);
-extern J9_CFUNC void J9WriteBarrierJ9ClassBatchStore(J9VMThread *vmThread, J9Class *destinationJ9Class);
+extern J9_CFUNC void J9WriteBarrierJ9ClassBatchStore(J9VMThread *vmThread, J9Class *destinationJ9Class, int jit);
 extern J9_CFUNC UDATA mergeMemorySpaces(J9VMThread *vmThread, void *destinationMemorySpace, void *sourceMemorySpace);
 extern J9_CFUNC UDATA j9gc_scavenger_enabled(J9JavaVM *javaVM);
 extern J9_CFUNC UDATA j9gc_concurrent_scavenger_enabled(J9JavaVM *javaVM);

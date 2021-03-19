@@ -33,6 +33,7 @@
 #include "StackSlotValidator.hpp"
 #include "VMInterface.hpp"
 #include "VMThreadListIterator.hpp"
+#include "Configuration.hpp"
 
 /**
  * Concurrents stack slot iterator.
@@ -101,10 +102,84 @@ MM_ConcurrentMarkingDelegate::signalThreadsToActivateWriteBarrier(MM_Environment
 
 	J9VMThread *walkThread;
 	GC_VMThreadListIterator vmThreadListIterator(_javaVM);
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 	while ((walkThread = vmThreadListIterator.nextVMThread()) != NULL) {
-		walkThread->privateFlags |= J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+		MM_EnvironmentBase *walkEnv = MM_EnvironmentBase::getEnvironment(walkThread->omrVMThread);
+		//walkThread->privateFlags |= J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+		if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
+			if (extensions->debugSATBlevel >= 2) {
+				omrtty_printf("** [SATB] [signalThreadsToActivateWriteBarrier] %i[%p] ** \n", walkEnv->getWorkerID(), walkEnv);
+			}
+			walkEnv->setAllocationColor(GC_MARK);
+			walkEnv->setThreadScanned(true);
+			Assert_MM_true(walkEnv->getGCEnvironment()->_referenceObjectBuffer->isEmpty());
+			// _collector->flushLocalBuffers(walkEnv);
+		}
 	}
 	GC_VMInterface::unlockVMThreadList(extensions);
+}
+
+void
+MM_ConcurrentMarkingDelegate::doRoots(MM_EnvironmentBase *env)
+{
+	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
+	OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
+
+	GC_VMInterface::lockVMThreadList(extensions);
+
+	if (extensions->debugSATBlevel >= 2) {
+		omrtty_printf("** [SATB] [MM_ConcurrentMarkingDelegate::doRoots] ** \n");
+	}
+
+	J9VMThread *walkThread;
+	GC_VMThreadListIterator vmThreadListIterator(_javaVM);
+
+	while ((walkThread = vmThreadListIterator.nextVMThread()) != NULL) {
+
+		MM_EnvironmentBase *walkEnv = MM_EnvironmentBase::getEnvironment(walkThread->omrVMThread);
+		GC_VMThreadIterator vmThreadIterator(walkThread);
+		omrobjectptr_t *slotPtr;
+		uintptr_t slotNum = 0;
+
+		walkEnv->_workStack.reset(env, _markingScheme->getWorkPackets());
+
+		while (NULL != (slotPtr = vmThreadIterator.nextSlot())) {
+			slotNum +=1;
+			omrobjectptr_t objectPtr = *slotPtr;
+			if (_markingScheme->isHeapObject(objectPtr) && !walkEnv->getExtensions()->heap->objectIsInGap(objectPtr)) {
+				_markingScheme->markObject(walkEnv, objectPtr);
+			} else if (NULL != objectPtr) {
+				Assert_MM_true(vmthreaditerator_state_monitor_records == vmThreadIterator.getState());
+			}
+		}
+
+		markSchemeStackIteratorData localData;
+		localData.markingScheme = _markingScheme;
+		localData.env = walkEnv;
+		GC_VMThreadStackSlotIterator::scanSlots(walkThread, walkThread, (void *)&localData, concurrentStackSlotIterator, true, false);
+
+		_collector->flushLocalBuffers(walkEnv);
+		walkEnv->setThreadScanned(true);
+	}
+	GC_VMInterface::unlockVMThreadList(extensions);
+
+
+	bool collectedRoots = false;
+	bool paidTax = false;
+	_satbSTW = true;
+
+	collectJNIRoots(env, &collectedRoots);
+	Assert_MM_true(collectedRoots);
+
+	collectClassRoots(env, &paidTax, &collectedRoots);
+	Assert_MM_true(collectedRoots && paidTax);
+
+	collectFinalizableRoots(env, &collectedRoots);
+	Assert_MM_true(collectedRoots);
+
+	collectStringRoots(env, &paidTax, &collectedRoots);
+	_collector->flushLocalBuffers(env);
+	_satbSTW = false;
 }
 
 void
@@ -115,10 +190,18 @@ MM_ConcurrentMarkingDelegate::signalThreadsToDeactivateWriteBarrier(MM_Environme
 		GC_VMInterface::lockVMThreadList(extensions);
 		GC_VMThreadListIterator vmThreadListIterator(_javaVM);
 		J9VMThread *walkThread;
+		OMRPORT_ACCESS_FROM_OMRPORT(env->getPortLibrary());
 
 		/* Reset vmThread flag so mutators don't dirty cards or run write barriers until next concurrent KO */
 		while ((walkThread = vmThreadListIterator.nextVMThread()) != NULL) {
-			walkThread->privateFlags &= ~J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+			MM_EnvironmentBase *walkEnv = MM_EnvironmentBase::getEnvironment(walkThread->omrVMThread);
+			//walkThread->privateFlags &= ~J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+			if (extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) {
+				walkEnv->setAllocationColor(GC_UNMARK);
+				if (extensions->debugSATBlevel >= 2) {
+					omrtty_printf("** [SATB] [signalThreadsToDeactivateWriteBarrier] %i[%p] ** \n", walkEnv->getWorkerID(), walkEnv);
+				}
+			}
 		}
 		GC_VMInterface::unlockVMThreadList(extensions);
 	}
@@ -197,7 +280,10 @@ MM_ConcurrentMarkingDelegate::collectJNIRoots(MM_EnvironmentBase *env, bool *com
 {
 	*completedJNIRoots = false;
 
-	Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
+	if(!_satbSTW) {
+		Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
+	}
+
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
 	GC_VMInterface::lockJNIGlobalReferences(extensions);
 	GC_PoolIterator jniGlobalReferenceIterator(_javaVM->jniGlobalReferences);
@@ -205,7 +291,7 @@ MM_ConcurrentMarkingDelegate::collectJNIRoots(MM_EnvironmentBase *env, bool *com
 	uintptr_t slotNum = 0;
 	while((slotPtr = (omrobjectptr_t *)jniGlobalReferenceIterator.nextSlot()) != NULL) {
 		slotNum += 1;
-		if (_collector->isExclusiveAccessRequestWaitingSparseSample(env, slotNum)) {
+		if (!_satbSTW && _collector->isExclusiveAccessRequestWaitingSparseSample(env, slotNum)) {
 			goto quitTracingJNIRefs;
 		} else {
 			_markingScheme->markObject(env, *slotPtr);
@@ -232,14 +318,16 @@ MM_ConcurrentMarkingDelegate::collectClassRoots(MM_EnvironmentBase *env, bool *c
 #if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
 	MM_GCExtensions::DynamicClassUnloading dynamicClassUnloadingFlag = (MM_GCExtensions::DynamicClassUnloading )extensions->dynamicClassUnloading;
 	if (MM_GCExtensions::DYNAMIC_CLASS_UNLOADING_NEVER != dynamicClassUnloadingFlag) {
+		Assert_MM_false(_satbSTW);
 		_scanClassesMode.setScanClassesMode(MM_ScanClassesMode::SCAN_CLASSES_NEED_TO_BE_EXECUTED);
 	} else
 #endif /* J9VM_GC_DYNAMIC_CLASS_UNLOADING */
 	{
 		/* mark classes as roots, scanning classes is disabled by default */
 		*classesMarkedAsRoots = true;
-
-		Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
+		if(!_satbSTW) {
+			Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
+		}
 
 		GC_VMInterface::lockClasses(extensions);
 
@@ -250,7 +338,7 @@ MM_ConcurrentMarkingDelegate::collectClassRoots(MM_EnvironmentBase *env, bool *c
 		while((segment = segmentIterator.nextSegment()) != NULL) {
 			GC_ClassHeapIterator classHeapIterator(_javaVM, segment);
 			while((clazz = classHeapIterator.nextClass()) != NULL) {
-				if (env->isExclusiveAccessRequestWaiting()) {
+				if (!_satbSTW && env->isExclusiveAccessRequestWaiting()) {
 					goto quitMarkClasses;
 				} else {
 					_markingScheme->getMarkingDelegate()->scanClass(env, clazz);
@@ -275,7 +363,9 @@ MM_ConcurrentMarkingDelegate::collectFinalizableRoots(MM_EnvironmentBase *env, b
 {
 	*completedFinalizableRoots = false;
 
-	Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
+	if (!_satbSTW) {
+		Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
+	}
 
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
 	GC_VMInterface::lockFinalizeList(extensions);
@@ -284,7 +374,7 @@ MM_ConcurrentMarkingDelegate::collectFinalizableRoots(MM_EnvironmentBase *env, b
 	{
 		/* walk finalizable objects created by the system class loader */
 		j9object_t systemObject = finalizeListManager->peekSystemFinalizableObject();
-		while (!env->isExclusiveAccessRequestWaiting() && (NULL != systemObject)) {
+		while ((_satbSTW || !env->isExclusiveAccessRequestWaiting()) && (NULL != systemObject)) {
 			_markingScheme->markObject(env, systemObject);
 			systemObject = finalizeListManager->peekNextSystemFinalizableObject(systemObject);
 		}
@@ -293,7 +383,7 @@ MM_ConcurrentMarkingDelegate::collectFinalizableRoots(MM_EnvironmentBase *env, b
 	{
 		/* walk finalizable objects created by all other class loaders*/
 		j9object_t defaultObject = finalizeListManager->peekDefaultFinalizableObject();
-		while (!env->isExclusiveAccessRequestWaiting() && (NULL != defaultObject)) {
+		while ((_satbSTW || !env->isExclusiveAccessRequestWaiting()) && (NULL != defaultObject)) {
 			_markingScheme->markObject(env, defaultObject);
 			defaultObject = finalizeListManager->peekNextDefaultFinalizableObject(defaultObject);
 		}
@@ -302,13 +392,13 @@ MM_ConcurrentMarkingDelegate::collectFinalizableRoots(MM_EnvironmentBase *env, b
 	{
 		/* walk reference objects */
 		j9object_t referenceObject = finalizeListManager->peekReferenceObject();
-		while (!env->isExclusiveAccessRequestWaiting() && (NULL != referenceObject)) {
+		while ((_satbSTW || !env->isExclusiveAccessRequestWaiting()) && (NULL != referenceObject)) {
 			_markingScheme->markObject(env, referenceObject);
 			referenceObject = finalizeListManager->peekNextReferenceObject(referenceObject);
 		}
 	}
 
-	*completedFinalizableRoots = !env->isExclusiveAccessRequestWaiting();
+	*completedFinalizableRoots = _satbSTW || !env->isExclusiveAccessRequestWaiting();
 
 	GC_VMInterface::unlockFinalizeList(extensions);
 }

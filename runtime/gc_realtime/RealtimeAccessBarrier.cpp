@@ -30,6 +30,10 @@
 #include "RealtimeGC.hpp"
 #include "RealtimeMarkingScheme.hpp"
 
+#if defined(OMR_GC_SATB_M1_STRICT)
+#include <assert.h>
+#endif /* OMR_GC_SATB_M1_STRICT */
+
 #if defined(J9VM_GC_REALTIME)
 
 /**
@@ -621,6 +625,9 @@ extern "C" {
 J9Object*
 j9gc_objaccess_referenceGet(J9VMThread *vmThread, j9object_t refObject) 
 {
+#if defined(OMR_GC_SATB_M1_STRICT)
+	assert(0);
+#endif /* OMR_GC_SATB_M1_STRICT */
 	MM_RealtimeAccessBarrier *barrier = (MM_RealtimeAccessBarrier*)MM_GCExtensions::getExtensions(vmThread)->accessBarrier;
 	return barrier->referenceGet(vmThread, refObject);
 }

@@ -32,6 +32,9 @@
 #include "ForwardedHeader.hpp"
 #include "MixedObjectModel.hpp"
 
+
+#include <assert.h>
+
 class MM_AllocateInitialization;
 class MM_EnvironmentBase;
 
@@ -324,6 +327,7 @@ public:
 	MMINLINE bool
 	isIndexable(omrobjectptr_t objectPtr)
 	{
+		assert(objectPtr != NULL );
 		J9Class* clazz = J9GC_J9OBJECT_CLAZZ(objectPtr, this);
 		return J9GC_CLASS_IS_ARRAY(clazz);
 	}

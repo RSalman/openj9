@@ -1030,7 +1030,7 @@ bool TR_NewInitialization::visitNode(TR::Node *node)
             #endif
 
             // real-time write barriers read before they write, so treat them as loads
-            if (node->getOpCode().isStore() && (!comp()->getOptions()->realTimeGC() || !node->getOpCode().isWrtBar()))
+            if (node->getOpCode().isStore() && /*(!comp()->getOptions()->realTimeGC() || */  !node->getOpCode().isWrtBar())
                {
                // If this is a store of a zero value and we are allowed to
                // remove it, do so. It is useless since the allocation will
@@ -1720,14 +1720,14 @@ void TR_NewInitialization::modifyReferences(Candidate *candidate, Candidate *sta
    // If this is a write barrier store of one candidate into a field of another
    // the write barrier store can be changed into a simple indirect store.
    //
-   if (node->getOpCodeValue() == TR::awrtbari && firstChildIsCandidate && secondChildIsCandidate && !comp()->getOptions()->realTimeGC())
-      {
-      if (performTransformation(comp(), "%sChanging write barrier store into iastore [%p]\n", OPT_DETAILS, node))
-         {
-         TR::Node::recreate(node, TR::astorei);
-         node->getChild(2)->recursivelyDecReferenceCount();
-         node->setNumChildren(2);
-         }
-      }
+//   if (node->getOpCodeValue() == TR::awrtbari && firstChildIsCandidate && secondChildIsCandidate && !comp()->getOptions()->realTimeGC())
+//      {
+//      if (performTransformation(comp(), "%sChanging write barrier store into iastore [%p]\n", OPT_DETAILS, node))
+//         {
+//         TR::Node::recreate(node, TR::astorei);
+//         node->getChild(2)->recursivelyDecReferenceCount();
+//         node->setNumChildren(2);
+//         }
+//      }
    }
 

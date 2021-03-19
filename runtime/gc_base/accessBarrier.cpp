@@ -691,6 +691,9 @@ J9MetronomeWriteBarrierJ9ClassStore(J9VMThread *vmThread, J9Object *dstObject, J
 void
 J9WriteBarrierStore(J9VMThread *vmThread, J9Object *dstObject, J9Object *srcObject)
 {
+	Assert_MM_unreachable();
+	//OMRPORT_ACCESS_FROM_ENVIRONMENT(MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread));
+	//omrtty_printf("** J9WriteBarrierStore ** \n");
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	barrier->postObjectStore(vmThread, dstObject, (fj9object_t*)0, srcObject);
 }
@@ -698,21 +701,30 @@ J9WriteBarrierStore(J9VMThread *vmThread, J9Object *dstObject, J9Object *srcObje
 void
 J9WriteBarrierJ9ClassStore(J9VMThread *vmThread, J9Class *dstObject, J9Object *srcObject)
 {
+	Assert_MM_unreachable();
+	//OMRPORT_ACCESS_FROM_ENVIRONMENT(MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread));
+	//omrtty_printf("** J9WriteBarrierJ9ClassStore ** \n");
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	barrier->postObjectStore(vmThread, dstObject, (J9Object**)0, srcObject);
 }
 
 void
-J9WriteBarrierBatchStore(J9VMThread *vmThread, J9Object *dstObject)
+J9WriteBarrierBatchStore(J9VMThread *vmThread, J9Object *dstObject, int jit)
 {
+	//OMRPORT_ACCESS_FROM_ENVIRONMENT(MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread));
+	//omrtty_printf("** J9WriteBarrierBatchStore ** \n");
+	Assert_MM_false(jit);
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	/* In Metronome, write barriers are always pre-store */
-	barrier->preBatchObjectStore(vmThread, dstObject);	
+	barrier->preBatchObjectStore(vmThread, dstObject);
 }
 
 void
-J9WriteBarrierJ9ClassBatchStore(J9VMThread *vmThread, J9Class *dstJ9Class)
+J9WriteBarrierJ9ClassBatchStore(J9VMThread *vmThread, J9Class *dstJ9Class, int  jit)
 {
+	//OMRPORT_ACCESS_FROM_ENVIRONMENT(MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread));
+	//omrtty_printf("** J9WriteBarrierJ9ClassBatchStore ** \n");
+	Assert_MM_false(jit);
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	/* In Metronome, write barriers are always pre-store */
 	barrier->preBatchObjectStore(vmThread, dstJ9Class);	
@@ -803,6 +815,7 @@ j9gc_objaccess_checkClassLive(J9JavaVM *javaVM, J9Class *classPtr)
 {
 #if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(javaVM)->accessBarrier;
+	Assert_MM_unreachable();
 	return (barrier->checkClassLive(javaVM, classPtr)) ? 1 : 0;
 #else /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
 	return 1;

@@ -46,6 +46,10 @@
 #include "vrfytbl.h"
 #include "bytecodewalk.h"
 
+#if defined(OMR_GC_SATB_M1_STRICT)
+#include <assert.h>
+#endif /* OMR_GC_SATB_M1_STRICT */
+
 /* Static J9ITable used as a non-NULL iTable cache value by classes that don't implement any interfaces */
 const J9ITable invalidITable = { (J9Class *) (UDATA) 0xDEADBEEF, 0, (J9ITable *) NULL };
 
@@ -2109,6 +2113,9 @@ fixDirectHandles(J9VMThread * currentThread, J9HashTable * classHashTable, J9Has
 				BOOLEAN isMetronome = (J9_GC_POLICY_METRONOME == ((OMR_VM *)vm->omrVM)->gcPolicy);
 				while (NULL != weakRef) {
 					j9object_t mhReferent = NULL;
+#if defined(OMR_GC_SATB_M1_STRICT)
+					assert(0);
+#endif /* OMR_GC_SATB_M1_STRICT */
 					if (isMetronome) {
 						mhReferent = vm->memoryManagerFunctions->j9gc_objaccess_referenceGet(currentThread, weakRef);
 					} else {

@@ -32,6 +32,9 @@
 #include "AllocateInitialization.hpp"
 #include "ObjectAccessBarrier.hpp"
 
+#include <assert.h>
+
+
 /**
  * Class definition for the Java object allocation model.
  */

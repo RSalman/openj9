@@ -51,6 +51,7 @@
 #include "ObjectModel.hpp"
 #include "ParallelGlobalGC.hpp"
 #include "ParallelHeapWalker.hpp"
+#include "Configuration.hpp"
 #if defined(OMR_ENV_DATA64) && defined(OMR_GC_FULL_POINTERS)
 #include "ReadBarrierVerifier.hpp"
 #endif /* defined(OMR_ENV_DATA64) && defined(OMR_GC_FULL_POINTERS) */
@@ -244,6 +245,9 @@ MM_GlobalCollectorDelegate::postMarkProcessing(MM_EnvironmentBase *env)
 {
 #if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
 	if (_extensions->runtimeCheckDynamicClassUnloading != 0) {
+#if defined(OMR_GC_SATB_M1_STRICT)
+	_extensions->unreachableSATB();
+#endif /* OMR_GC_SATB_M1_STRICT */
 		PORT_ACCESS_FROM_ENVIRONMENT(env);
 		OMR_VMThread *vmThread = env->getOmrVMThread();
 		Trc_MM_ClassUnloadingStart((J9VMThread *)vmThread->_language_vmthread);

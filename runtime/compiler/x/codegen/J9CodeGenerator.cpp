@@ -61,10 +61,10 @@ J9::X86::CodeGenerator::CodeGenerator() :
 
    cg->setAheadOfTimeCompile(new (cg->trHeapMemory()) TR::AheadOfTimeCompile(cg));
 
-   if (!TR::Compiler->om.canGenerateArraylets())
-      {
-      cg->setSupportsReferenceArrayCopy();
-      }
+//   if (!TR::Compiler->om.canGenerateArraylets())
+//      {
+//      cg->setSupportsReferenceArrayCopy();
+//      }
 
    if (comp->requiresSpineChecks())
       {

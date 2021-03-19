@@ -1936,6 +1936,7 @@ MM_ObjectAccessBarrier::staticCompareAndExchangeLong(J9VMThread *vmThread, J9Cla
 bool
 MM_ObjectAccessBarrier::preObjectStore(J9VMThread *vmThread, J9Object *destObject, fj9object_t *destAddress, J9Object *value, bool isVolatile)
 {
+	Assert_MM_unreachable();
 	return true;
 }
 
@@ -1946,6 +1947,7 @@ MM_ObjectAccessBarrier::preObjectStore(J9VMThread *vmThread, J9Object *destObjec
 bool
 MM_ObjectAccessBarrier::preObjectStore(J9VMThread *vmThread, J9Object *destObject, J9Object **destAddress, J9Object *value, bool isVolatile)
 {
+	Assert_MM_unreachable();
 	return true;
 }
 
@@ -1956,6 +1958,7 @@ MM_ObjectAccessBarrier::preObjectStore(J9VMThread *vmThread, J9Object *destObjec
 bool 
 MM_ObjectAccessBarrier::preObjectStore(J9VMThread *vmThread, J9Object **destAddress, J9Object *value, bool isVolatile)
 {
+	Assert_MM_unreachable();
 	return true;
 }
 

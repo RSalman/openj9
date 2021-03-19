@@ -25,6 +25,7 @@
 #include "j9consts.h"
 #include "omrgcconsts.h"
 #include "omr.h"
+#include <assert.h>
 
 extern "C" {
 
@@ -32,6 +33,7 @@ extern "C" {
 j9object_t JNICALL
 Fast_java_lang_ref_Reference_getImpl(J9VMThread *currentThread, j9object_t receiverObject)
 {
+	assert(0);
 	/* Only called from java for metronome GC policy */
 	return currentThread->javaVM->memoryManagerFunctions->j9gc_objaccess_referenceGet(currentThread, receiverObject);
 }
@@ -42,12 +44,14 @@ Fast_java_lang_ref_Reference_reprocess(J9VMThread *currentThread, j9object_t rec
 {
 	J9JavaVM* javaVM = currentThread->javaVM;
 	J9MemoryManagerFunctions* mmFuncs = javaVM->memoryManagerFunctions;
+
+	assert(0);
 	if (J9_GC_POLICY_METRONOME == ((OMR_VM *)javaVM->omrVM)->gcPolicy) {
 		/* Under metronome call getReferent, which will mark the referent if a GC is in progress. */
 		mmFuncs->j9gc_objaccess_referenceGet(currentThread, receiverObject);
 	} else {
 		/* Reprocess this object if a concurrent GC is in progress */
-		mmFuncs->J9WriteBarrierBatchStore(currentThread, receiverObject);
+		mmFuncs->J9WriteBarrierBatchStore(currentThread, receiverObject, 1);
 	}
 }
 

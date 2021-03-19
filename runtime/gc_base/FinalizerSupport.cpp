@@ -135,6 +135,9 @@ finalizeForcedUnfinalizedToFinalizable(J9VMThread *vmThread)
 		while (NULL != objectPtr) {
 			J9Object* next = extensions->accessBarrier->getFinalizeLink(objectPtr);
 			/* CMVC 181817: need to remember all objects forced onto the finalizable list */
+#if defined(OMR_GC_SATB_M1_STRICT)
+			extensions->unreachableSATB();
+#endif /* OMR_GC_SATB_M1_STRICT */
 			extensions->accessBarrier->forcedToFinalizableObject(vmThread, objectPtr);
 			buffer.add(env, objectPtr);
 			objectPtr = next;
