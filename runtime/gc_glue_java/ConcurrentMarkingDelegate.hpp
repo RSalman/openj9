@@ -324,10 +324,18 @@ public:
 	{
 #if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
 		if (0 != bytesTraced) {
-			_scanClassesMode.setScanClassesMode(MM_ScanClassesMode::SCAN_CLASSES_NEED_TO_BE_EXECUTED); /* need more iterations */
+			concurrentScanningNeeded(env);/* need more iterations */
 		} else {
 			_scanClassesMode.setScanClassesMode(MM_ScanClassesMode::SCAN_CLASSES_COMPLETE); /* complete for now */
 		}
+#endif /* J9VM_GC_DYNAMIC_CLASS_UNLOADING */
+	}
+
+	MMINLINE void
+	concurrentScanningNeeded(MM_EnvironmentBase *env)
+	{
+#if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
+		_scanClassesMode.setScanClassesMode(MM_ScanClassesMode::SCAN_CLASSES_NEED_TO_BE_EXECUTED);
 #endif /* J9VM_GC_DYNAMIC_CLASS_UNLOADING */
 	}
 

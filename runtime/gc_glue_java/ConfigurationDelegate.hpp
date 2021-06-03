@@ -304,11 +304,16 @@ public:
 
 		if (extensions->isConcurrentMarkEnabled()) {
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
-			vmThread->cardTableVirtualStart = (U_8*)j9gc_incrementalUpdate_getCardTableVirtualStart(omrVM);
-			vmThread->cardTableShiftSize = j9gc_incrementalUpdate_getCardTableShiftValue(omrVM);
-			MM_ConcurrentGC *concurrentGC = (MM_ConcurrentGC *)extensions->getGlobalCollector();
-			if (!extensions->optimizeConcurrentWB || (CONCURRENT_OFF < concurrentGC->getConcurrentGCStats()->getExecutionMode())) {
-				vmThread->privateFlags |= J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+			if (!extensions->usingSATBBarrier()) {
+				vmThread->cardTableVirtualStart = (U_8*)j9gc_incrementalUpdate_getCardTableVirtualStart(omrVM);
+				vmThread->cardTableShiftSize = j9gc_incrementalUpdate_getCardTableShiftValue(omrVM);
+				MM_ConcurrentGC *concurrentGC = (MM_ConcurrentGC *)extensions->getGlobalCollector();
+				if (!extensions->optimizeConcurrentWB || (CONCURRENT_OFF < concurrentGC->getConcurrentGCStats()->getExecutionMode())) {
+					vmThread->privateFlags |= J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE;
+				}
+			} else {
+				vmThread->cardTableVirtualStart = (U_8*)NULL;
+				vmThread->cardTableShiftSize = 0;
 			}
 #else
 			Assert_MM_unreachable();

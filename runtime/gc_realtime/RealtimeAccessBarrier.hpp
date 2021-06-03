@@ -72,6 +72,7 @@ public:
 
 	/* Inherited from MM_ObjectAccessBarrier */
 	virtual J9Object* referenceGet(J9VMThread *vmThread, J9Object *refObject);
+	virtual void referenceReprocess(J9VMThread *vmThread, J9Object *refObject);
 	virtual void jniDeleteGlobalReference(J9VMThread *vmThread, J9Object *reference);
 	virtual void stringConstantEscaped(J9VMThread *vmThread, J9Object *stringConst);
 	virtual void deleteHeapReference(MM_EnvironmentBase *env, J9Object *object);
@@ -121,7 +122,7 @@ private:
 	MMINLINE bool isBarrierActive(MM_EnvironmentBase* env)
 	{
 		MM_GCExtensions* extensions = MM_GCExtensions::getExtensions(env);
-		return !extensions->sATBBarrierRememberedSet->isGlobalFragmentIndexPreserved(env);
+		return !extensions->sATBBarrierRememberedSet->isGlobalFragmentIndexPreserved();
 	}
 
 	MMINLINE bool isDoubleBarrierActiveOnThread(J9VMThread *vmThread)
@@ -151,6 +152,9 @@ public:
 
 	virtual I_32 backwardReferenceArrayCopyIndex(J9VMThread *vmThread, J9IndexableObject *srcObject, J9IndexableObject *destObject, I_32 srcIndex, I_32 destIndex, I_32 lengthInSlots);
 	virtual I_32 forwardReferenceArrayCopyIndex(J9VMThread *vmThread, J9IndexableObject *srcObject, J9IndexableObject *destObject, I_32 srcIndex, I_32 destIndex, I_32 lengthInSlots);
+
+	virtual UDATA checkStringConstantsLive(J9JavaVM *javaVM, j9object_t stringOne, j9object_t stringTwo);
+	virtual BOOLEAN checkStringConstantLive(J9JavaVM *javaVM, j9object_t string);
 
 	/**
 	 * Remember objects that are forced onto the finalizable list at shutdown.

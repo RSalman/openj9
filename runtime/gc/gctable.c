@@ -185,8 +185,9 @@ J9MemoryManagerFunctions MemoryManagerFunctions = {
 	j9gc_objaccess_structuralCompareFlattenedObjects,
 	j9gc_objaccess_cloneIndexableObject,
 	j9gc_objaccess_asConstantPoolObject,
-#if defined(J9VM_GC_REALTIME)
 	j9gc_objaccess_referenceGet,
+	j9gc_objaccess_referenceReprocess,
+#if defined(J9VM_GC_REALTIME)
 	j9gc_objaccess_jniDeleteGlobalReference,
 #endif /* J9VM_GC_REALTIME */
 	j9gc_objaccess_compareAndSwapObject,

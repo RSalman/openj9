@@ -25,6 +25,7 @@
 #include "AsyncCallbackHandler.hpp"
 #include "ClassLoaderIterator.hpp"
 #include "ConfigurationDelegate.hpp"
+#include "Configuration.hpp"
 #include "FinalizeListManager.hpp"
 #include "Heap.hpp"
 #include "HeapRegionDescriptorStandard.hpp"
@@ -384,9 +385,9 @@ MM_ConcurrentMarkingDelegate::concurrentClassMark(MM_EnvironmentBase *env, bool 
 
 	Trc_MM_concurrentClassMarkStart(env->getLanguageVMThread());
 
-	Assert_GC_true_with_message(env, ((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE, "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
-
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
+	Assert_GC_true_with_message(env, (((J9VMThread *)env->getLanguageVMThread())->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE) || (extensions->isSATBBarrierActive()), "MM_ConcurrentStats::_executionMode = %zu\n", _collector->getConcurrentGCStats()->getExecutionMode());
+
 	GC_VMInterface::lockClasses(extensions);
 	GC_VMInterface::lockClassLoaders(extensions);
 

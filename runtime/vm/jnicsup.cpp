@@ -1660,7 +1660,7 @@ j9jni_deleteGlobalRef(JNIEnv *env, jobject globalRef, jboolean isWeak)
 #endif
 
 #if defined(J9VM_GC_REALTIME)
-		if (J9_EXTENDED_RUNTIME_USER_REALTIME_ACCESS_BARRIER == (vm->extendedRuntimeFlags & J9_EXTENDED_RUNTIME_USER_REALTIME_ACCESS_BARRIER)) {
+		if (J9_EXTENDED_RUNTIME_USER_SATB_ACCESS_BARRIER == (vm->extendedRuntimeFlags & J9_EXTENDED_RUNTIME_USER_SATB_ACCESS_BARRIER)) {
 			vm->memoryManagerFunctions->j9gc_objaccess_jniDeleteGlobalReference(vmThread, *((j9object_t*)globalRef));
 		}
 #endif /* defined(J9VM_GC_REALTIME) */

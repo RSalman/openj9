@@ -50,6 +50,7 @@
 #include "ObjectAllocationInterface.hpp"
 #include "ObjectModel.hpp"
 #include "ObjectMonitor.hpp"
+#include "Configuration.hpp"
 #if defined (J9VM_GC_REALTIME)
 #include "Scheduler.hpp"
 #endif /* J9VM_GC_REALTIME */
@@ -84,9 +85,9 @@ J9Object *
 J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
 
 #if defined(J9VM_GC_THREAD_LOCAL_HEAP)
-	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
 	if (extensions->instrumentableAllocateHookEnabled || !env->isInlineTLHAllocateEnabled()) {
 		/* This function is restricted to only being used for instrumentable allocates so we only need to check that one allocation hook.
 		 * Note that we can't handle hooked allocates since we might be called without a JIT resolve frame and that is required for us to
@@ -126,6 +127,10 @@ J9AllocateObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFla
 
 	if ((NULL != objectPtr) && J9_ARE_ALL_BITS_SET(clazz->classFlags, J9ClassContainsUnflattenedFlattenables)) {
 		vmThread->javaVM->internalVMFunctions->defaultValueWithUnflattenedFlattenables(vmThread, clazz, objectPtr);
+	}
+
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -324,9 +329,9 @@ J9Object *
 J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t numberOfIndexedFields, uintptr_t allocateFlags)
 {
 	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
 	
 #if defined(J9VM_GC_THREAD_LOCAL_HEAP)
-	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(env);
 	if (extensions->instrumentableAllocateHookEnabled || !env->isInlineTLHAllocateEnabled()) {
 		/* This function is restricted to only being used for instrumentable allocates so we only need to check that one allocation hook.
 		 * Note that we can't handle hooked allocates since we might be called without a JIT resolve frame and that is required for us to
@@ -365,6 +370,10 @@ J9AllocateIndexableObjectNoGC(J9VMThread *vmThread, J9Class *clazz, uint32_t num
 		for (UDATA index = 0; index < numberOfIndexedFields; index++) {
 			objectAccessBarrier.inlineIndexableObjectStoreObject(vmThread, objectPtr, index, defaultValue);
 		}
+	}
+
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
 	}
 
 	return objectPtr;
@@ -416,6 +425,7 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 					J9_STORE_LOCKWORD(vmThread, lockEA, initialLockword);
 				}
 			}
+			env->getExtensions()->checkColorAndMark(env, objectPtr);
 		}
 	}
 
@@ -508,7 +518,11 @@ J9AllocateObject(J9VMThread *vmThread, J9Class *clazz, uintptr_t allocateFlags)
 	if (extensions->needDisableInlineAllocation()) {
 		env->disableInlineTLHAllocate();
 	}
-#endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
+#endif /* J9VM_GC_THREAD_LOCAL_HEAP */
+
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
+	}
 
 	return objectPtr;
 }
@@ -550,6 +564,7 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 		if (NULL != objectPtr) {
 			uintptr_t allocatedBytes = env->getExtensions()->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
 			Assert_MM_true(allocatedBytes == indexableOAM.getAllocateDescription()->getContiguousBytes());
+			extensions->checkColorAndMark(env, objectPtr);
 		}
 	}
 	
@@ -648,6 +663,10 @@ J9AllocateIndexableObject(J9VMThread *vmThread, J9Class *clazz, uint32_t numberO
 		env->disableInlineTLHAllocate();
 	}
 #endif /* J9VM_GC_THREAD_LOCAL_HEAP */	
+
+	if (objectPtr != NULL) {
+		extensions->checkColorAndMark(env, objectPtr);
+	}
 
 	return objectPtr;
 }

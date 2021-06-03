@@ -28,6 +28,7 @@ set(j9vm_gc_glue_sources
 	${CMAKE_CURRENT_SOURCE_DIR}/CompactSchemeFixupObject.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/CompactSchemeFixupRoots.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ConcurrentMarkingDelegate.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ConcurrentMarkingSATBDelegate.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ConcurrentSafepointCallbackJava.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/EnvironmentDelegate.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/GlobalCollectorDelegate.cpp

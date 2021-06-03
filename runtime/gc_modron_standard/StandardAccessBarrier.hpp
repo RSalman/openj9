@@ -107,12 +107,20 @@ public:
 	bool preObjectStoreImpl(J9VMThread *vmThread, J9Object *destObject, fj9object_t *destAddress, J9Object *value, bool isVolatile);
 	bool preObjectStoreImpl(J9VMThread *vmThread, J9Object **destAddress, J9Object *value, bool isVolatile);
 
+	virtual J9Object* referenceGet(J9VMThread *vmThread, J9Object *refObject);
+	virtual void referenceReprocess(J9VMThread *vmThread, J9Object *refObject);
+
 	void rememberObjectToRescan(MM_EnvironmentBase *env, J9Object *object);
 
-	MMINLINE bool isSATBBarrierActive(MM_EnvironmentBase* env)
+	MMINLINE bool isSATBBarrierActive()
 	{
-		return ((_extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled()) &&
-				(!_extensions->sATBBarrierRememberedSet->isGlobalFragmentIndexPreserved(env)));
+		return ((usingSATBBarrier()) &&
+				(!_extensions->sATBBarrierRememberedSet->isGlobalFragmentIndexPreserved()));
+	}
+
+	MMINLINE bool usingSATBBarrier()
+	{
+		return (_extensions->configuration->isSnapshotAtTheBeginningBarrierEnabled());
 	}
 
 	MMINLINE bool isIncrementalUpdateBarrierActive(J9VMThread *vmThread)
@@ -143,6 +151,23 @@ public:
 	 * Must hold exclusive VM access to call this!
 	 */
 	static UDATA getJNICriticalRegionCount(MM_GCExtensions *extensions);
+
+	virtual void forcedToFinalizableObject(J9VMThread* vmThread, J9Object *object);
+
+#if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
+	/**
+	 * Check is class alive
+	 * Required to prevent visibility of dead classes in SATB GC policies
+	 * Check is J9_GC_CLASS_LOADER_DEAD flag set for classloader and try to mark
+	 * class loader object if bit is not set to force class to be alive
+	 * @param javaVM pointer to J9JavaVM
+	 * @param classPtr class to check
+	 * @return true if class is alive
+	 */
+	virtual bool checkClassLive(J9JavaVM *javaVM, J9Class *classPtr);
+#endif /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
+
+	virtual void jniDeleteGlobalReference(J9VMThread *vmThread, J9Object *reference);
 };
 
 #endif /* STANDARDACCESSBARRIER_HPP_ */

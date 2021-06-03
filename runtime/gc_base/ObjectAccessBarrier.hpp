@@ -541,6 +541,17 @@ public:
 		/* no-op default implementation */
 	}
 
+	virtual J9Object* referenceGet(J9VMThread *vmThread, J9Object *refObject)
+	{
+		return J9VMJAVALANGREFREFERENCE_REFERENT_VM(vmThread->javaVM, refObject);
+	}
+
+	virtual void referenceReprocess(J9VMThread *vmThread, J9Object *refObject)
+	{
+		/* Equivalent to J9WriteBarrierBatchStore */
+		preBatchObjectStore(vmThread, refObject);
+	}
+
 #if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
 	/**
 	 * Check is class alive
@@ -555,6 +566,21 @@ public:
 		return true;
 	}
 #endif /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
+
+	virtual UDATA checkStringConstantsLive(J9JavaVM *javaVM, j9object_t stringOne, j9object_t stringTwo)
+	{
+		return true;
+	}
+
+	virtual BOOLEAN checkStringConstantLive(J9JavaVM *javaVM, j9object_t string)
+	{
+		return TRUE;
+	}
+
+	virtual void jniDeleteGlobalReference(J9VMThread *vmThread, J9Object *reference)
+	{
+		/* no-op default implementation */
+	}
 
 	MM_ObjectAccessBarrier(MM_EnvironmentBase *env) : MM_BaseVirtual()
 		, _extensions(NULL) 

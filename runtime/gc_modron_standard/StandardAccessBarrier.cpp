@@ -147,7 +147,7 @@ MM_StandardAccessBarrier::preObjectStoreImpl(J9VMThread *vmThread, J9Object *des
 {
 	MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
 
-	if (isSATBBarrierActive(env)) {
+	if (isSATBBarrierActive()) {
 		if (NULL != destObject) {
 			if (isDoubleBarrierActiveOnThread(vmThread)) {
 				rememberObjectToRescan(env, value);
@@ -170,7 +170,7 @@ MM_StandardAccessBarrier::preObjectStoreImpl(J9VMThread *vmThread, J9Object **de
 {
 	MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
 
-	if (isSATBBarrierActive(env)) {
+	if (isSATBBarrierActive()) {
 		if (isDoubleBarrierActiveOnThread(vmThread)) {
 			rememberObjectToRescan(env, value);
 		}
@@ -324,6 +324,7 @@ void
 MM_StandardAccessBarrier::preBatchObjectStoreImpl(J9VMThread *vmThread, J9Object *dstObject)
 {
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
+	Assert_MM_true(!usingSATBBarrier());
 	/* Call the concurrent write barrier if required */
 	if(_extensions->concurrentMark && 
 		(vmThread->privateFlags & J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE) &&
@@ -769,6 +770,74 @@ MM_StandardAccessBarrier::asConstantPoolObject(J9VMThread *vmThread, J9Object* t
 	return cpObject;
 }
 
+void
+MM_StandardAccessBarrier::forcedToFinalizableObject(J9VMThread* vmThread, J9Object* object)
+{
+	if (!usingSATBBarrier()) {
+		MM_ObjectAccessBarrier::forcedToFinalizableObject(vmThread, object);
+		return;
+	}
+
+	MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	if (isSATBBarrierActive()) {
+		rememberObjectToRescan(env, object);
+	}
+}
+
+/**
+ * Override of referenceGet.  When the collector is tracing, it makes any gotten object "grey" to ensure
+ * that it is eventually traced.
+ *
+ * @param refObject the SoftReference or WeakReference object on which get() is being called.
+ *	This barrier must not be called for PhantomReferences.  The parameter must not be NULL.
+ */
+J9Object *
+MM_StandardAccessBarrier::referenceGet(J9VMThread *vmThread, J9Object *refObject)
+{
+	if (!usingSATBBarrier()) {
+		return MM_ObjectAccessBarrier::referenceGet(vmThread, refObject);
+	}
+
+	MM_ParallelGlobalGC *globalCollector = (MM_ParallelGlobalGC *)_extensions->getGlobalCollector();
+	MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+
+	UDATA offset = J9VMJAVALANGREFREFERENCE_REFERENT_OFFSET(vmThread);
+	J9Object *referent = mixedObjectReadObject(vmThread, refObject, offset, false);
+
+	/* Do nothing exceptional for NULL or marked referents */
+	if (referent == NULL) {
+		goto done;
+	}
+
+	if (globalCollector->getMarkingScheme()->isMarked(referent)) {
+		goto done;
+	}
+
+	/* Throughout tracing, we must turn any gotten reference into a root, because the
+	 * thread doing the getting may already have been scanned.  However, since we are
+	 * running on a mutator thread and not a gc thread we do this indirectly by putting
+	 * the object in the barrier buffer.
+	 */
+	if (isSATBBarrierActive()) {
+		rememberObjectToRescan(env, referent);
+	}
+
+done:
+	/* We must return the external reference */
+	return referent;
+}
+
+void
+MM_StandardAccessBarrier::referenceReprocess(J9VMThread *vmThread, J9Object *refObject)
+{
+	if (!usingSATBBarrier()) {
+		MM_ObjectAccessBarrier::referenceReprocess(vmThread, refObject);
+		return;
+	}
+
+	referenceGet(vmThread, refObject);
+}
+
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 bool
 MM_StandardAccessBarrier::preWeakRootSlotRead(J9VMThread *vmThread, j9object_t *srcAddress)
@@ -931,3 +1000,55 @@ MM_StandardAccessBarrier::preObjectRead(J9VMThread *vmThread, J9Object *srcObjec
 }
 #endif
 
+#if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
+bool
+MM_StandardAccessBarrier::checkClassLive(J9JavaVM *javaVM, J9Class *classPtr)
+{
+	/* Skip if incremental concurrent */
+	if(!usingSATBBarrier()) {
+		return true;
+	}
+
+	J9ClassLoader *classLoader = classPtr->classLoader;
+	bool result = false;
+
+	if ((0 == (classLoader->gcFlags & J9_GC_CLASS_LOADER_DEAD)) && (0 == (J9CLASS_FLAGS(classPtr) & J9AccClassDying))) {
+		/*
+		 *  this class has not been discovered dead yet
+		 *  so mark it if necessary to force it to be alive
+		 */
+		J9Object *classLoaderObject = classLoader->classLoaderObject;
+
+		if (NULL != classLoaderObject) {
+			/*
+			 * The return for this case is always true. If mark is active but not completed yet
+			 * force this class to be marked to survive this GC
+			 */
+
+			J9VMThread* vmThread =  javaVM->internalVMFunctions->currentVMThread(javaVM);
+			MM_EnvironmentBase* env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+			if (isSATBBarrierActive()) {
+				rememberObjectToRescan(env, classLoaderObject);
+			}
+			result = true;
+		} else {
+			/* this class loader probably is in initialization process and class loader object has not been attached yet */
+			result = true;
+		}
+	}
+
+	return result;
+}
+#endif /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
+
+void
+MM_StandardAccessBarrier::jniDeleteGlobalReference(J9VMThread *vmThread, J9Object *reference)
+{
+	/* Skip if incremental concurrent */
+	if(!usingSATBBarrier() || !isSATBBarrierActive()) {
+		return;
+	}
+
+	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	rememberObjectToRescan(env, reference);
+}

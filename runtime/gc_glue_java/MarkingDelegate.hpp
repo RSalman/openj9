@@ -106,6 +106,7 @@ public:
 	void mainSetupForGC(MM_EnvironmentBase *env);
 	void mainSetupForWalk(MM_EnvironmentBase *env);
 	void mainCleanupAfterGC(MM_EnvironmentBase *env);
+	void startUnfinalizedAndOwnableSyncProcessing(MM_EnvironmentBase *env);
 	void scanRoots(MM_EnvironmentBase *env);
 	void completeMarking(MM_EnvironmentBase *env);
 
