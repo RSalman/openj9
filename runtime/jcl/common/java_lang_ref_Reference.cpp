@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1998, 2020 IBM Corp. and others
+ * Copyright (c) 1998, 2021 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -38,13 +38,9 @@ Java_java_lang_ref_Reference_reprocess(JNIEnv *env, jobject recv)
 	J9MemoryManagerFunctions* mmFuncs = vm->memoryManagerFunctions;
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	j9object_t receiverObject = J9_JNI_UNWRAP_REFERENCE(recv);
-	if (J9_GC_POLICY_METRONOME == vm->gcPolicy) {
-		/* Under metronome call getReferent, which will mark the referent if a GC is in progress. */
-		mmFuncs->j9gc_objaccess_referenceGet(currentThread, receiverObject);
-	} else {
-		/* Reprocess this object if a concurrent GC is in progress */
-		mmFuncs->J9WriteBarrierBatchStore(currentThread, receiverObject);
-	}
+	/* Under the SATB barrier call getReferent (for metronome or standard SATB CM), this will mark the referent if a cycle is in progress.
+	 * Or reprocess this object if a concurrent GC (incremental cards) is in progress */
+	mmFuncs->j9gc_objaccess_referenceReprocess(currentThread, receiverObject);
 	vmFuncs->internalExitVMToJNI(currentThread);
 }
 
@@ -81,11 +77,7 @@ Java_java_lang_ref_Reference_refersTo(JNIEnv *env, jobject reference, jobject ta
 		j9object_t j9target = (NULL != target) ? J9_JNI_UNWRAP_REFERENCE(target) : NULL;
 		j9object_t referent = NULL;
 
-		if (J9_GC_POLICY_METRONOME == ((OMR_VM *)vm->omrVM)->gcPolicy) {
-			referent = vm->memoryManagerFunctions->j9gc_objaccess_referenceGet(currentThread, j9reference);
-		} else {
-			referent = J9VMJAVALANGREFREFERENCE_REFERENT_VM(vm, j9reference);
-		}
+		referent = vm->memoryManagerFunctions->j9gc_objaccess_referenceGet(currentThread, j9reference);
 
 		if (referent == j9target) {
 			result = JNI_TRUE;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1991, 2020 IBM Corp. and others
+ * Copyright (c) 1991, 2021 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -185,10 +185,9 @@ J9MemoryManagerFunctions MemoryManagerFunctions = {
 	j9gc_objaccess_structuralCompareFlattenedObjects,
 	j9gc_objaccess_cloneIndexableObject,
 	j9gc_objaccess_asConstantPoolObject,
-#if defined(J9VM_GC_REALTIME)
 	j9gc_objaccess_referenceGet,
+	j9gc_objaccess_referenceReprocess,
 	j9gc_objaccess_jniDeleteGlobalReference,
-#endif /* J9VM_GC_REALTIME */
 	j9gc_objaccess_compareAndSwapObject,
 	j9gc_objaccess_staticCompareAndSwapObject,
 	j9gc_objaccess_compareAndExchangeObject,

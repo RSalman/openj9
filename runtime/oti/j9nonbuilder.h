@@ -4344,10 +4344,9 @@ typedef struct J9MemoryManagerFunctions {
 	BOOLEAN ( *j9gc_objaccess_structuralCompareFlattenedObjects)(struct J9VMThread *vmThread, J9Class *valueClass, j9object_t lhsObject, j9object_t rhsObject, UDATA startOffset) ;
 	void  ( *j9gc_objaccess_cloneIndexableObject)(struct J9VMThread *vmThread, J9IndexableObject *srcObject, J9IndexableObject *destObject) ;
 	j9object_t  ( *j9gc_objaccess_asConstantPoolObject)(struct J9VMThread *vmThread, j9object_t toConvert, UDATA allocationFlags) ;
-#if defined(J9VM_GC_REALTIME)
 	j9object_t  ( *j9gc_objaccess_referenceGet)(struct J9VMThread *vmThread, j9object_t refObject) ;
+	void ( *j9gc_objaccess_referenceReprocess)(struct J9VMThread *vmThread, j9object_t refObject) ;
 	void  ( *j9gc_objaccess_jniDeleteGlobalReference)(struct J9VMThread *vmThread, j9object_t reference) ;
-#endif /* J9VM_GC_REALTIME */
 	UDATA  ( *j9gc_objaccess_compareAndSwapObject)(struct J9VMThread *vmThread, j9object_t destObject, j9object_t*destAddress, j9object_t compareObject, j9object_t swapObject) ;
 	UDATA  ( *j9gc_objaccess_staticCompareAndSwapObject)(struct J9VMThread *vmThread, J9Class *destClass, j9object_t *destAddress, j9object_t compareObject, j9object_t swapObject) ;
 	j9object_t  ( *j9gc_objaccess_compareAndExchangeObject)(struct J9VMThread *vmThread, j9object_t destObject, j9object_t*destAddress, j9object_t compareObject, j9object_t swapObject) ;

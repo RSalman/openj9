@@ -177,7 +177,7 @@ MM_MetronomeDelegate::initialize(MM_EnvironmentBase *env)
 	}
 
 	J9JavaVM *javaVM = (J9JavaVM *)env->getLanguageVM();
-	javaVM->extendedRuntimeFlags |= J9_EXTENDED_RUNTIME_USER_REALTIME_ACCESS_BARRIER;
+	javaVM->extendedRuntimeFlags |= J9_EXTENDED_RUNTIME_USER_SATB_ACCESS_BARRIER;
 #if defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING)
 	if (!_extensions->dynamicClassUnloadingThresholdForced) {
 		_extensions->dynamicClassUnloadingThreshold = 1;
