@@ -2341,7 +2341,7 @@ protected:
 	preStaticReadObject(J9VMThread *vmThread, J9Class *clazz, j9object_t *srcAddress)
 	{
 		if (j9gc_modron_readbar_none != _readBarrierType) {
-			vmThread->javaVM->memoryManagerFunctions->J9ReadBarrierJ9Class(vmThread, srcAddress);
+			vmThread->javaVM->memoryManagerFunctions->J9ReadBarrierClass(vmThread, srcAddress);
 		}
 	}
 	
@@ -2772,12 +2772,12 @@ private:
 		if (0 != parent->globalFragmentIndex) {
 			/* if the double barrier is enabled call OOL */
 			if (0 == fragment->localFragmentIndex) {
-				vmThread->javaVM->memoryManagerFunctions->J9WriteBarrierJ9PreClassStore(vmThread, object, destAddress, value);
+				vmThread->javaVM->memoryManagerFunctions->J9WriteBarrierPreClassStore(vmThread, object, destAddress, value);
 			} else {
 				j9object_t oldObject = *destAddress;
 				if (NULL != oldObject) {
 					if (!isMarked(vmThread, oldObject)) {
-						vmThread->javaVM->memoryManagerFunctions->J9WriteBarrierJ9PreClassStore(vmThread, object, destAddress, value);
+						vmThread->javaVM->memoryManagerFunctions->J9WriteBarrierPreClassStore(vmThread, object, destAddress, value);
 					}
 				}
 			}
@@ -2789,7 +2789,7 @@ private:
 	/**
 	 * Check to see if the object is marked
 	 *
-	 * @NOTE only for WRT as this check the mark map for segregated heaps
+	 * @NOTE only for SATB Concurrent Mark
 	 *
 	 * @param object to check
 	 * @return true if the object was marked, false otherwise
@@ -2797,19 +2797,25 @@ private:
 	VMINLINE bool
 	isMarked(J9VMThread *vmThread, j9object_t object)
 	{
-		UDATA heapMapBits = 0;
 		J9JavaVM *const javaVM = vmThread->javaVM;
-		UDATA heapDelta = (UDATA)object - javaVM->realtimeHeapMapBasePageRounded;
-		UDATA slotIndex = heapDelta >> J9VMGC_SIZECLASSES_LOG_SMALLEST;
- 		UDATA bitIndex = slotIndex & J9_GC_MARK_MAP_UDATA_MASK;
-		UDATA bitMask = ((UDATA)1) << bitIndex;
-		slotIndex = slotIndex >> J9_GC_MARK_MAP_LOG_SIZEOF_UDATA;
 
-		UDATA *heapMapBitsBase = javaVM->realtimeHeapMapBits;
-		heapMapBits = heapMapBitsBase[slotIndex];
-		heapMapBits &= bitMask;
+		if (J9_GC_POLICY_METRONOME == javaVM->gcPolicy) {
+			UDATA heapMapBits = 0;
+			UDATA heapDelta = (UDATA)object - javaVM->realtimeHeapMapBasePageRounded;
+			UDATA slotIndex = heapDelta >> J9VMGC_SIZECLASSES_LOG_SMALLEST;
+			UDATA bitIndex = slotIndex & J9_GC_MARK_MAP_UDATA_MASK;
+			UDATA bitMask = ((UDATA)1) << bitIndex;
+			slotIndex = slotIndex >> J9_GC_MARK_MAP_LOG_SIZEOF_UDATA;
 
-		return (0 != heapMapBits);
+			UDATA *heapMapBitsBase = javaVM->realtimeHeapMapBits;
+			heapMapBits = heapMapBitsBase[slotIndex];
+			heapMapBits &= bitMask;
+
+			return 0 != heapMapBits;
+		} else {
+			/* TODO: Inline for SATB Standard Configuration */
+			return javaVM->memoryManagerFunctions->j9gc_ext_is_marked(vmThread->javaVM, object);
+		}
 	}
 #endif /* J9VM_GC_REALTIME */
 

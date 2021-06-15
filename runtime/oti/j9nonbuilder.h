@@ -4190,8 +4190,8 @@ typedef struct J9MemoryManagerFunctions {
 	j9object_t  ( *J9AllocateObjectNoGC)(struct J9VMThread *vmThread, J9Class *clazz, UDATA allocateFlags) ;
 	void  ( *J9WriteBarrierPostStore)(struct J9VMThread *vmThread, j9object_t destinationObject, j9object_t storedObject) ;
 	void  ( *J9WriteBarrierBatchStore)(struct J9VMThread *vmThread, j9object_t destinationObject) ;
-	void  ( *J9WriteBarrierJ9PostClassStore)(struct J9VMThread *vmThread, J9Class *destinationJ9Class, j9object_t storedObject) ;
-	void  ( *J9WriteBarrierJ9ClassBatchStore)(struct J9VMThread *vmThread, J9Class *destinationJ9Class) ;
+	void  ( *J9WriteBarrierPostClassStore)(struct J9VMThread *vmThread, J9Class *destinationJ9Class, j9object_t storedObject) ;
+	void  ( *J9WriteBarrierClassBatchStore)(struct J9VMThread *vmThread, J9Class *destinationJ9Class) ;
 	UDATA  ( *allocateMemoryForSublistFragment)(void *vmThread, J9VMGC_SublistFragment *fragmentPrimitive) ;
 	UDATA  ( *j9gc_heap_free_memory)(struct J9JavaVM *javaVM) ;
 	UDATA  ( *j9gc_heap_total_memory)(struct J9JavaVM *javaVM) ;
@@ -4262,9 +4262,9 @@ typedef struct J9MemoryManagerFunctions {
 	void  ( *j9gc_ext_reachable_from_object_do)(struct J9VMThread *vmThread, j9object_t objectPtr, jvmtiIterationControl (*func)(j9object_t *slotPtr, j9object_t sourcePtr, void *userData, IDATA type, IDATA index, IDATA wasReportedBefore), void *userData, UDATA walkFlags) ;
 	UDATA  ( *j9gc_jit_isInlineAllocationSupported)(struct J9JavaVM *javaVM) ;
 	void  ( *J9WriteBarrierPreStore)(struct J9VMThread *vmThread, J9Object *dstObject, fj9object_t *dstAddress, J9Object *srcObject) ;
-	void  ( *J9WriteBarrierJ9PreClassStore)(struct J9VMThread *vmThread, J9Object *dstObject, J9Object **dstAddress, J9Object *srcObject) ;
+	void  ( *J9WriteBarrierPreClassStore)(struct J9VMThread *vmThread, J9Object *dstObject, J9Object **dstAddress, J9Object *srcObject) ;
 	void  ( *J9ReadBarrier)(struct J9VMThread *vmThread, fj9object_t *srcAddress);
-	void  ( *J9ReadBarrierJ9Class)(struct J9VMThread *vmThread, j9object_t *srcAddress);
+	void  ( *J9ReadBarrierClass)(struct J9VMThread *vmThread, j9object_t *srcAddress);
 	j9object_t  ( *j9gc_weakRoot_readObject)(struct J9VMThread *vmThread, j9object_t *srcAddress);
 	j9object_t  ( *j9gc_weakRoot_readObjectVM)(struct J9JavaVM *vm, j9object_t *srcAddress);
 	UDATA  ( *j9gc_ext_check_is_valid_heap_object)(struct J9JavaVM *javaVM, j9object_t ptr, UDATA flags) ;
@@ -4345,10 +4345,9 @@ typedef struct J9MemoryManagerFunctions {
 	BOOLEAN ( *j9gc_objaccess_structuralCompareFlattenedObjects)(struct J9VMThread *vmThread, J9Class *valueClass, j9object_t lhsObject, j9object_t rhsObject, UDATA startOffset) ;
 	void  ( *j9gc_objaccess_cloneIndexableObject)(struct J9VMThread *vmThread, J9IndexableObject *srcObject, J9IndexableObject *destObject) ;
 	j9object_t  ( *j9gc_objaccess_asConstantPoolObject)(struct J9VMThread *vmThread, j9object_t toConvert, UDATA allocationFlags) ;
-#if defined(J9VM_GC_REALTIME)
 	j9object_t  ( *j9gc_objaccess_referenceGet)(struct J9VMThread *vmThread, j9object_t refObject) ;
+	void ( *j9gc_objaccess_referenceReprocess)(struct J9VMThread *vmThread, j9object_t refObject) ;
 	void  ( *j9gc_objaccess_jniDeleteGlobalReference)(struct J9VMThread *vmThread, j9object_t reference) ;
-#endif /* J9VM_GC_REALTIME */
 	UDATA  ( *j9gc_objaccess_compareAndSwapObject)(struct J9VMThread *vmThread, j9object_t destObject, j9object_t*destAddress, j9object_t compareObject, j9object_t swapObject) ;
 	UDATA  ( *j9gc_objaccess_staticCompareAndSwapObject)(struct J9VMThread *vmThread, J9Class *destClass, j9object_t *destAddress, j9object_t compareObject, j9object_t swapObject) ;
 	j9object_t  ( *j9gc_objaccess_compareAndExchangeObject)(struct J9VMThread *vmThread, j9object_t destObject, j9object_t*destAddress, j9object_t compareObject, j9object_t swapObject) ;

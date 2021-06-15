@@ -673,7 +673,7 @@ J9WriteBarrierPreStore(J9VMThread *vmThread, J9Object *dstObject, fj9object_t *d
 }
 
 void
-J9WriteBarrierJ9PreClassStore(J9VMThread *vmThread, J9Object *dstObject, J9Object **dstAddress, J9Object *srcObject)
+J9WriteBarrierPreClassStore(J9VMThread *vmThread, J9Object *dstObject, J9Object **dstAddress, J9Object *srcObject)
 {
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	barrier->preObjectStore(vmThread, dstObject, dstAddress, srcObject);
@@ -687,7 +687,7 @@ J9WriteBarrierPostStore(J9VMThread *vmThread, J9Object *dstObject, J9Object *src
 }
 
 void
-J9WriteBarrierJ9PostClassStore(J9VMThread *vmThread, J9Class *dstObject, J9Object *srcObject)
+J9WriteBarrierPostClassStore(J9VMThread *vmThread, J9Class *dstObject, J9Object *srcObject)
 {
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	barrier->postObjectStore(vmThread, dstObject, (J9Object**)0, srcObject);
@@ -702,7 +702,7 @@ J9WriteBarrierBatchStore(J9VMThread *vmThread, J9Object *dstObject)
 }
 
 void
-J9WriteBarrierJ9ClassBatchStore(J9VMThread *vmThread, J9Class *dstJ9Class)
+J9WriteBarrierClassBatchStore(J9VMThread *vmThread, J9Class *dstJ9Class)
 {
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	/* In Metronome, write barriers are always pre-store */
@@ -717,7 +717,7 @@ J9ReadBarrier(J9VMThread *vmThread, fj9object_t *srcAddress)
 }
 
 void
-J9ReadBarrierJ9Class(J9VMThread *vmThread, j9object_t *srcAddress)
+J9ReadBarrierClass(J9VMThread *vmThread, j9object_t *srcAddress)
 {
 	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
 	barrier->preObjectRead(vmThread, NULL, srcAddress);
@@ -798,6 +798,41 @@ j9gc_objaccess_checkClassLive(J9JavaVM *javaVM, J9Class *classPtr)
 #else /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
 	return 1;
 #endif /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
+}
+
+J9Object*
+j9gc_objaccess_referenceGet(J9VMThread *vmThread, j9object_t refObject)
+{
+	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread)->accessBarrier;
+	return barrier->referenceGet(vmThread, refObject);
+}
+
+void
+j9gc_objaccess_referenceReprocess(J9VMThread *vmThread, j9object_t refObject)
+{
+	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread)->accessBarrier;
+	barrier->referenceReprocess(vmThread, refObject);
+}
+
+UDATA
+j9gc_objaccess_checkStringConstantsLive(J9JavaVM *javaVM, j9object_t stringOne, j9object_t stringTwo)
+{
+	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(javaVM)->accessBarrier;
+	return barrier->checkStringConstantsLive(javaVM, stringOne, stringTwo);
+}
+
+BOOLEAN
+j9gc_objaccess_checkStringConstantLive(J9JavaVM *javaVM, j9object_t string)
+{
+	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(javaVM)->accessBarrier;
+	return barrier->checkStringConstantLive(javaVM, string);
+}
+
+void
+j9gc_objaccess_jniDeleteGlobalReference(J9VMThread *vmThread, J9Object *reference)
+{
+	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
+	barrier->jniDeleteGlobalReference(vmThread, reference);
 }
 
 } /* extern "C" */
