@@ -543,7 +543,7 @@ allLiveClassesNextDo(J9ClassWalkState* state)
 	J9Class* clazzPtr = NULL;
 	J9Class* clazzPtrCandidate = NULL;
 	J9JavaVM* vm = state->vm;
-	const BOOLEAN needCheckInGC = (J9_GC_WRITE_BARRIER_TYPE_SATB == vm->gcWriteBarrierType);
+	const BOOLEAN needCheckInGC = (J9_GC_WRITE_BARRIER_TYPE_REALTIME == vm->gcWriteBarrierType);
 
 	do {
 		clazzPtrCandidate = allClassesNextDo(state);

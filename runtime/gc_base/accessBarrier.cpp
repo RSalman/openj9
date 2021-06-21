@@ -374,24 +374,6 @@ j9gc_objaccess_readObjectFromInternalVMSlot(J9VMThread *vmThread, J9JavaVM *vm, 
 	return barrier->readObjectFromInternalVMSlot(vmThread, srcSlot);
 }
 
-/**
- * The "barrier" in java.lang.ref.Reference.get() is essentially a complete replacement
- * for the original function.
- */
-J9Object*
-j9gc_objaccess_referenceGet(J9VMThread *vmThread, j9object_t refObject)
-{
-	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread)->accessBarrier;
-	return barrier->referenceGet(vmThread, refObject);
-}
-
-void
-j9gc_objaccess_referenceReprocess(J9VMThread *vmThread, j9object_t refObject)
-{
-	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread)->accessBarrier;
-	barrier->referenceReprocess(vmThread, refObject);
-}
-
 /* TODO: VMDESIGN 1016 - fix this API to use fj9object_t* instead of J9Object** */
 UDATA
 j9gc_objaccess_compareAndSwapObject(J9VMThread *vmThread, J9Object *destObject, J9Object **destAddress, J9Object *compareObject, J9Object *swapObject)
@@ -816,30 +798,6 @@ j9gc_objaccess_checkClassLive(J9JavaVM *javaVM, J9Class *classPtr)
 #else /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
 	return 1;
 #endif /* defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING) */
-}
-
-UDATA
-j9gc_objaccess_checkStringConstantsLive(J9JavaVM *javaVM, j9object_t stringOne, j9object_t stringTwo)
-{
-	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(javaVM)->accessBarrier;
-	return barrier->checkStringConstantsLive(javaVM, stringOne, stringTwo);
-}
-
-/**
- *  Equivalent to j9gc_objaccess_checkStringConstantsLive but for a single string constant
- */
-BOOLEAN
-j9gc_objaccess_checkStringConstantLive(J9JavaVM *javaVM, j9object_t string)
-{
-	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(javaVM)->accessBarrier;
-	return barrier->checkStringConstantLive(javaVM, string);
-}
-
-void
-j9gc_objaccess_jniDeleteGlobalReference(J9VMThread *vmThread, J9Object *reference)
-{
-	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread->javaVM)->accessBarrier;
-	barrier->jniDeleteGlobalReference(vmThread, reference);
 }
 
 } /* extern "C" */

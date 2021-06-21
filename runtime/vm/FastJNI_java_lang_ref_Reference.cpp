@@ -32,7 +32,7 @@ extern "C" {
 j9object_t JNICALL
 Fast_java_lang_ref_Reference_getImpl(J9VMThread *currentThread, j9object_t receiverObject)
 {
-	/* Only called from java for SATB barrier */
+	/* Only called from java for metronome GC policy */
 	return currentThread->javaVM->memoryManagerFunctions->j9gc_objaccess_referenceGet(currentThread, receiverObject);
 }
 
@@ -42,9 +42,13 @@ Fast_java_lang_ref_Reference_reprocess(J9VMThread *currentThread, j9object_t rec
 {
 	J9JavaVM* javaVM = currentThread->javaVM;
 	J9MemoryManagerFunctions* mmFuncs = javaVM->memoryManagerFunctions;
-	/* Under SATB barrier call getReferent, which will mark the referent if a GC is in progress. Or 
-	 * reprocess this object if a concurrent GC (incremental cards) is in progress */
-	mmFuncs->j9gc_objaccess_referenceReprocess(currentThread, receiverObject);
+	if (J9_GC_POLICY_METRONOME == ((OMR_VM *)javaVM->omrVM)->gcPolicy) {
+		/* Under metronome call getReferent, which will mark the referent if a GC is in progress. */
+		mmFuncs->j9gc_objaccess_referenceGet(currentThread, receiverObject);
+	} else {
+		/* Reprocess this object if a concurrent GC is in progress */
+		mmFuncs->J9WriteBarrierBatchStore(currentThread, receiverObject);
+	}
 }
 
 J9_FAST_JNI_METHOD_TABLE(java_lang_ref_Reference)

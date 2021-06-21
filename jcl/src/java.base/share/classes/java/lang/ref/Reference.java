@@ -151,7 +151,7 @@ public boolean enqueue() {
  *			or null if object has been cleared.
  */	
 public T get() {
-	if (VM.J9_GC_WRITE_BARRIER_TYPE != VM.J9_GC_WRITE_BARRIER_TYPE_SATB) {
+	if (VM.J9_GC_POLICY != VM.J9_GC_POLICY_METRONOME) {
 		return referent;
 	}
 	return getImpl();

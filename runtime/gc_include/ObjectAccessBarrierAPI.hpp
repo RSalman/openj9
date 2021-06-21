@@ -2797,25 +2797,19 @@ private:
 	VMINLINE bool
 	isMarked(J9VMThread *vmThread, j9object_t object)
 	{
+		UDATA heapMapBits = 0;
 		J9JavaVM *const javaVM = vmThread->javaVM;
+		UDATA heapDelta = (UDATA)object - javaVM->realtimeHeapMapBasePageRounded;
+		UDATA slotIndex = heapDelta >> J9VMGC_SIZECLASSES_LOG_SMALLEST;
+ 		UDATA bitIndex = slotIndex & J9_GC_MARK_MAP_UDATA_MASK;
+		UDATA bitMask = ((UDATA)1) << bitIndex;
+		slotIndex = slotIndex >> J9_GC_MARK_MAP_LOG_SIZEOF_UDATA;
 
-		if (J9_GC_POLICY_METRONOME == javaVM->gcPolicy) {
-			UDATA heapMapBits = 0;
-			UDATA heapDelta = (UDATA)object - javaVM->realtimeHeapMapBasePageRounded;
-			UDATA slotIndex = heapDelta >> J9VMGC_SIZECLASSES_LOG_SMALLEST;
-			UDATA bitIndex = slotIndex & J9_GC_MARK_MAP_UDATA_MASK;
-			UDATA bitMask = ((UDATA)1) << bitIndex;
-			slotIndex = slotIndex >> J9_GC_MARK_MAP_LOG_SIZEOF_UDATA;
+		UDATA *heapMapBitsBase = javaVM->realtimeHeapMapBits;
+		heapMapBits = heapMapBitsBase[slotIndex];
+		heapMapBits &= bitMask;
 
-			UDATA *heapMapBitsBase = javaVM->realtimeHeapMapBits;
-			heapMapBits = heapMapBitsBase[slotIndex];
-			heapMapBits &= bitMask;
-
-			return (0 != heapMapBits);
-		} else {
-			/* TODO: Inline for Standard Configuration with SATB */
-			return javaVM->memoryManagerFunctions->j9gc_ext_is_marked(vmThread->javaVM, object);
-		}
+		return (0 != heapMapBits);
 	}
 #endif /* J9VM_GC_REALTIME */
 
